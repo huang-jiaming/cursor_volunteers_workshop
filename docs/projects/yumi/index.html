@@ -1,0 +1,1153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>Collage Maker</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-muted: #f1f5f9;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --primary: #2563eb;
+      --primary-strong: #1d4ed8;
+      --danger: #dc2626;
+      --border: #cbd5e1;
+      --focus: #0ea5e9;
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --radius: 0.5rem;
+      --radius-sm: 0.375rem;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+      --font: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: var(--space-4);
+    }
+
+    .header {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .subtitle {
+      margin: var(--space-1) 0 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .status-wrap {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      background: var(--surface);
+      font-size: 0.8rem;
+    }
+
+    .badge.online {
+      border-color: #16a34a;
+      color: #166534;
+      background: #dcfce7;
+    }
+
+    .badge.offline {
+      border-color: #d97706;
+      color: #92400e;
+      background: #ffedd5;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      align-items: end;
+    }
+
+    .field {
+      display: grid;
+      gap: var(--space-1);
+      min-width: 130px;
+      flex: 1;
+    }
+
+    .field.grow-2 {
+      flex: 2;
+      min-width: 180px;
+    }
+
+    label {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      min-height: 2.35rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.45rem 0.6rem;
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    input[type="color"] {
+      width: 100%;
+      min-height: 2.35rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: 0.15rem;
+    }
+
+    input:focus,
+    select:focus,
+    button:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: 1px;
+    }
+
+    button {
+      min-height: 2.35rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-muted);
+      color: var(--text);
+      padding: 0.45rem 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button.primary {
+      border-color: var(--primary-strong);
+      background: var(--primary);
+      color: #fff;
+    }
+
+    button.primary:hover {
+      background: var(--primary-strong);
+    }
+
+    button.danger {
+      border-color: #fca5a5;
+      background: #fef2f2;
+      color: var(--danger);
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .canvas-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #fff;
+      overflow: hidden;
+      width: 100%;
+      aspect-ratio: 3 / 2;
+      position: relative;
+      touch-action: none;
+    }
+
+    .canvas-stage {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+    }
+
+    .canvas-item {
+      position: absolute;
+      user-select: none;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    .canvas-item.selected {
+      outline: 2px solid var(--primary);
+      outline-offset: 1px;
+    }
+
+    .canvas-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .text-item {
+      white-space: pre-wrap;
+      min-width: 1px;
+      min-height: 1px;
+      line-height: 1.2;
+      pointer-events: none;
+    }
+
+    .split {
+      display: grid;
+      gap: var(--space-4);
+    }
+
+    .recent-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--space-3);
+    }
+
+    .recent-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      overflow: hidden;
+      display: grid;
+    }
+
+    .recent-card img {
+      width: 100%;
+      aspect-ratio: 3 / 2;
+      object-fit: cover;
+      background: var(--surface-muted);
+    }
+
+    .recent-card .meta {
+      padding: var(--space-2) var(--space-3) var(--space-3);
+      display: grid;
+      gap: var(--space-2);
+    }
+
+    .hint {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      margin: 0;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    .test-results {
+      margin-top: var(--space-3);
+      padding: var(--space-3);
+      border-radius: var(--radius-sm);
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+    }
+
+    @media (min-width: 860px) {
+      .split {
+        grid-template-columns: 320px 1fr;
+        align-items: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="title-wrap">
+        <h1>Collage Maker</h1>
+        <p class="subtitle">Simple, offline-first collage editor.</p>
+      </div>
+      <div class="status-wrap" aria-live="polite">
+        <span id="offline-badge" class="badge">Status unknown</span>
+        <span id="sw-badge" class="badge">PWA pending</span>
+      </div>
+    </header>
+
+    <main>
+      <section id="home-view" class="view active" aria-labelledby="home-title">
+        <div class="panel">
+          <h2 id="home-title">Home</h2>
+          <p class="hint">Create a new collage or revisit your latest 3 exports.</p>
+          <div class="row">
+            <button id="new-collage-btn" class="primary" type="button">New collage</button>
+            <button id="run-tests-btn" type="button">Run unit tests</button>
+          </div>
+          <div id="test-results" class="test-results" role="status" aria-live="polite">Unit tests not run yet.</div>
+        </div>
+
+        <div class="panel">
+          <h2>Recent collages</h2>
+          <p class="hint">Only the latest 3 are stored on this device.</p>
+          <div id="recent-list" class="recent-list" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section id="editor-view" class="view" aria-labelledby="editor-title">
+        <div class="panel">
+          <div class="row">
+            <button id="back-home-btn" type="button">Back to home</button>
+            <button id="clear-canvas-btn" class="danger" type="button">Clear canvas</button>
+          </div>
+        </div>
+
+        <div class="split">
+          <aside class="panel" aria-label="Editor controls">
+            <h2 id="editor-title">Edit</h2>
+
+            <div class="field">
+              <label for="image-upload">Upload images</label>
+              <input id="image-upload" type="file" accept="image/*" multiple>
+            </div>
+
+            <hr>
+
+            <div class="row">
+              <div class="field grow-2">
+                <label for="text-input">Text</label>
+                <input id="text-input" type="text" placeholder="Type text...">
+              </div>
+              <div class="field">
+                <label for="font-select">Font</label>
+                <select id="font-select">
+                  <option value="Arial">Arial</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Verdana">Verdana</option>
+                  <option value="Courier New">Courier New</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="font-size-input">Size</label>
+                <input id="font-size-input" type="number" min="12" max="120" step="1" value="40">
+              </div>
+              <div class="field">
+                <label for="color-input">Color</label>
+                <input id="color-input" type="color" value="#111827">
+              </div>
+              <div class="field">
+                <button id="add-text-btn" type="button" class="primary">Add text</button>
+              </div>
+            </div>
+
+            <div class="row">
+              <button id="update-selected-text-btn" type="button">Apply to selected text</button>
+              <button id="delete-selected-btn" type="button" class="danger">Delete selected</button>
+            </div>
+
+            <hr>
+
+            <div class="row">
+              <button id="download-png-btn" class="primary" type="button">Download PNG</button>
+              <button id="download-jpg-btn" type="button">Download JPG</button>
+            </div>
+            <p class="hint">Arrow keys move selected item. Hold Shift for faster movement.</p>
+            <p class="hint">Web search is disabled in offline/local-only mode.</p>
+          </aside>
+
+          <section class="panel" aria-label="Canvas area">
+            <h2 class="sr-only">Canvas</h2>
+            <div id="canvas-wrap" class="canvas-wrap" tabindex="0" role="application" aria-label="Collage canvas">
+              <div id="canvas-stage" class="canvas-stage"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var APP_VERSION = "v1";
+      var CANVAS_WIDTH = 1200;
+      var CANVAS_HEIGHT = 800;
+      var MAX_RECENTS = 3;
+      var STORAGE_KEY = "collage-recents-fallback-v1";
+      var DB_NAME = "collage-maker-db";
+      var STORE_NAME = "recents";
+
+      var state = {
+        view: "home",
+        items: [],
+        selectedId: null,
+        drag: null,
+        recents: [],
+        storageMode: "pending"
+      };
+
+      var els = {};
+
+      function uid(prefix) {
+        return prefix + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function getById(id) {
+        return document.getElementById(id);
+      }
+
+      function getExportMime(kind) {
+        return kind === "jpg" ? "image/jpeg" : "image/png";
+      }
+
+      function trimRecents(list, max) {
+        return list.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, max);
+      }
+
+      function supportsIndexedDB() {
+        return typeof window.indexedDB !== "undefined";
+      }
+
+      function chooseStorageMode() {
+        return supportsIndexedDB() ? "indexeddb" : "localstorage";
+      }
+
+      function initElements() {
+        els.homeView = getById("home-view");
+        els.editorView = getById("editor-view");
+        els.offlineBadge = getById("offline-badge");
+        els.swBadge = getById("sw-badge");
+        els.newCollageBtn = getById("new-collage-btn");
+        els.backHomeBtn = getById("back-home-btn");
+        els.clearCanvasBtn = getById("clear-canvas-btn");
+        els.canvasWrap = getById("canvas-wrap");
+        els.canvasStage = getById("canvas-stage");
+        els.imageUpload = getById("image-upload");
+        els.textInput = getById("text-input");
+        els.fontSelect = getById("font-select");
+        els.fontSizeInput = getById("font-size-input");
+        els.colorInput = getById("color-input");
+        els.addTextBtn = getById("add-text-btn");
+        els.updateSelectedTextBtn = getById("update-selected-text-btn");
+        els.deleteSelectedBtn = getById("delete-selected-btn");
+        els.downloadPngBtn = getById("download-png-btn");
+        els.downloadJpgBtn = getById("download-jpg-btn");
+        els.recentList = getById("recent-list");
+        els.runTestsBtn = getById("run-tests-btn");
+        els.testResults = getById("test-results");
+      }
+
+      function setView(view) {
+        state.view = view;
+        els.homeView.classList.toggle("active", view === "home");
+        els.editorView.classList.toggle("active", view === "editor");
+        if (view === "editor") {
+          els.canvasWrap.focus();
+        }
+      }
+
+      function mapToDisplayX(x) {
+        return x * (els.canvasWrap.clientWidth / CANVAS_WIDTH);
+      }
+
+      function mapToDisplayY(y) {
+        return y * (els.canvasWrap.clientHeight / CANVAS_HEIGHT);
+      }
+
+      function mapFromDisplayX(x) {
+        return x * (CANVAS_WIDTH / els.canvasWrap.clientWidth);
+      }
+
+      function mapFromDisplayY(y) {
+        return y * (CANVAS_HEIGHT / els.canvasWrap.clientHeight);
+      }
+
+      function getSelectedItem() {
+        return state.items.find(function (item) { return item.id === state.selectedId; }) || null;
+      }
+
+      function moveSelectedItem(dx, dy) {
+        var item = getSelectedItem();
+        if (!item) {
+          return;
+        }
+        item.x = clamp(item.x + dx, 0, CANVAS_WIDTH - item.w);
+        item.y = clamp(item.y + dy, 0, CANVAS_HEIGHT - item.h);
+        renderCanvas();
+      }
+
+      function removeSelectedItem() {
+        if (!state.selectedId) {
+          return;
+        }
+        state.items = state.items.filter(function (item) { return item.id !== state.selectedId; });
+        state.selectedId = null;
+        renderCanvas();
+      }
+
+      function clearCanvas() {
+        state.items = [];
+        state.selectedId = null;
+        renderCanvas();
+      }
+
+      function setOfflineUI() {
+        var offline = !navigator.onLine;
+        els.offlineBadge.textContent = offline ? "Offline" : "Online";
+        els.offlineBadge.className = "badge " + (offline ? "offline" : "online");
+      }
+
+      async function registerServiceWorker() {
+        if (!("serviceWorker" in navigator)) {
+          els.swBadge.textContent = "PWA unsupported";
+          return;
+        }
+        if (location.protocol !== "http:" && location.protocol !== "https:") {
+          els.swBadge.textContent = "PWA unavailable on file://";
+          return;
+        }
+        try {
+          var swSource = [
+            "const CACHE = 'collage-cache-" + APP_VERSION + "';",
+            "self.addEventListener('install', event => {",
+            "  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll([self.location.href])));",
+            "  self.skipWaiting();",
+            "});",
+            "self.addEventListener('activate', event => {",
+            "  event.waitUntil(self.clients.claim());",
+            "});",
+            "self.addEventListener('fetch', event => {",
+            "  if (event.request.method !== 'GET') return;",
+            "  event.respondWith(fetch(event.request).catch(() => caches.match(event.request).then(r => r || caches.match(self.location.href))));",
+            "});"
+          ].join("\n");
+          var blob = new Blob([swSource], { type: "text/javascript" });
+          var swUrl = URL.createObjectURL(blob);
+          await navigator.serviceWorker.register(swUrl);
+          els.swBadge.textContent = "PWA ready";
+          URL.revokeObjectURL(swUrl);
+        } catch (err) {
+          els.swBadge.textContent = "PWA failed";
+        }
+      }
+
+      function renderCanvas() {
+        els.canvasStage.innerHTML = "";
+        state.items.forEach(function (item) {
+          var node = document.createElement("div");
+          node.className = "canvas-item" + (item.id === state.selectedId ? " selected" : "");
+          node.dataset.itemId = item.id;
+          node.style.left = mapToDisplayX(item.x) + "px";
+          node.style.top = mapToDisplayY(item.y) + "px";
+          node.style.width = mapToDisplayX(item.w) + "px";
+          node.style.height = mapToDisplayY(item.h) + "px";
+
+          if (item.type === "image") {
+            var image = document.createElement("img");
+            image.src = item.src;
+            image.alt = item.alt || "Uploaded image";
+            node.appendChild(image);
+          } else {
+            var textEl = document.createElement("div");
+            textEl.className = "text-item";
+            textEl.textContent = item.text;
+            textEl.style.color = item.color;
+            textEl.style.fontFamily = item.font;
+            textEl.style.fontSize = mapToDisplayY(item.size) + "px";
+            textEl.style.width = "100%";
+            textEl.style.height = "100%";
+            node.appendChild(textEl);
+          }
+
+          node.addEventListener("pointerdown", onItemPointerDown);
+          els.canvasStage.appendChild(node);
+        });
+      }
+
+      function getItemById(itemId) {
+        return state.items.find(function (item) { return item.id === itemId; }) || null;
+      }
+
+      function onItemPointerDown(event) {
+        var itemId = event.currentTarget.dataset.itemId;
+        var item = getItemById(itemId);
+        if (!item) {
+          return;
+        }
+        state.selectedId = item.id;
+        var rect = els.canvasWrap.getBoundingClientRect();
+        var pointerX = mapFromDisplayX(event.clientX - rect.left);
+        var pointerY = mapFromDisplayY(event.clientY - rect.top);
+        state.drag = {
+          id: item.id,
+          offsetX: pointerX - item.x,
+          offsetY: pointerY - item.y
+        };
+        renderCanvas();
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp);
+      }
+
+      function onPointerMove(event) {
+        if (!state.drag) {
+          return;
+        }
+        var item = getItemById(state.drag.id);
+        if (!item) {
+          return;
+        }
+        var rect = els.canvasWrap.getBoundingClientRect();
+        var pointerX = mapFromDisplayX(event.clientX - rect.left);
+        var pointerY = mapFromDisplayY(event.clientY - rect.top);
+        item.x = clamp(pointerX - state.drag.offsetX, 0, CANVAS_WIDTH - item.w);
+        item.y = clamp(pointerY - state.drag.offsetY, 0, CANVAS_HEIGHT - item.h);
+        renderCanvas();
+      }
+
+      function onPointerUp() {
+        state.drag = null;
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointerup", onPointerUp);
+      }
+
+      function approxTextWidth(text, fontSize) {
+        return clamp(text.length * fontSize * 0.62, fontSize, CANVAS_WIDTH * 0.8);
+      }
+
+      function addTextItem() {
+        var text = (els.textInput.value || "").trim() || "New Text";
+        var font = els.fontSelect.value || "Arial";
+        var size = clamp(Number(els.fontSizeInput.value) || 40, 12, 120);
+        var color = els.colorInput.value || "#111827";
+        var width = approxTextWidth(text, size);
+        var height = size * 1.3;
+        var item = {
+          id: uid("txt"),
+          type: "text",
+          text: text,
+          font: font,
+          size: size,
+          color: color,
+          x: clamp((CANVAS_WIDTH - width) / 2, 0, CANVAS_WIDTH - width),
+          y: clamp((CANVAS_HEIGHT - height) / 2, 0, CANVAS_HEIGHT - height),
+          w: width,
+          h: height
+        };
+        state.items.push(item);
+        state.selectedId = item.id;
+        renderCanvas();
+      }
+
+      function updateSelectedText() {
+        var item = getSelectedItem();
+        if (!item || item.type !== "text") {
+          return;
+        }
+        var text = (els.textInput.value || "").trim() || item.text;
+        var font = els.fontSelect.value || item.font;
+        var size = clamp(Number(els.fontSizeInput.value) || item.size, 12, 120);
+        var color = els.colorInput.value || item.color;
+        var width = approxTextWidth(text, size);
+        var height = size * 1.3;
+        item.text = text;
+        item.font = font;
+        item.size = size;
+        item.color = color;
+        item.w = width;
+        item.h = height;
+        item.x = clamp(item.x, 0, CANVAS_WIDTH - item.w);
+        item.y = clamp(item.y, 0, CANVAS_HEIGHT - item.h);
+        renderCanvas();
+      }
+
+      function loadImageFile(file) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function () {
+            var src = String(reader.result || "");
+            var img = new Image();
+            img.onload = function () {
+              var maxW = CANVAS_WIDTH * 0.45;
+              var maxH = CANVAS_HEIGHT * 0.45;
+              var scale = Math.min(maxW / img.width, maxH / img.height, 1);
+              var w = Math.max(50, Math.round(img.width * scale));
+              var h = Math.max(50, Math.round(img.height * scale));
+              resolve({
+                id: uid("img"),
+                type: "image",
+                src: src,
+                alt: file.name || "Uploaded image",
+                x: clamp((CANVAS_WIDTH - w) / 2, 0, CANVAS_WIDTH - w),
+                y: clamp((CANVAS_HEIGHT - h) / 2, 0, CANVAS_HEIGHT - h),
+                w: w,
+                h: h
+              });
+            };
+            img.onerror = reject;
+            img.src = src;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function handleUpload(event) {
+        var files = Array.prototype.slice.call(event.target.files || []);
+        if (!files.length) {
+          return;
+        }
+        for (var i = 0; i < files.length; i += 1) {
+          try {
+            var item = await loadImageFile(files[i]);
+            state.items.push(item);
+            state.selectedId = item.id;
+          } catch (err) {
+            // Skip unreadable files.
+          }
+        }
+        event.target.value = "";
+        renderCanvas();
+      }
+
+      function drawItemToContext(ctx, item) {
+        if (item.type === "image") {
+          return drawImageItem(ctx, item);
+        }
+        ctx.save();
+        ctx.fillStyle = item.color;
+        ctx.font = item.size + "px " + item.font;
+        ctx.textBaseline = "top";
+        ctx.fillText(item.text, item.x, item.y, item.w);
+        ctx.restore();
+        return Promise.resolve();
+      }
+
+      function drawImageItem(ctx, item) {
+        return new Promise(function (resolve, reject) {
+          var img = new Image();
+          img.onload = function () {
+            ctx.drawImage(img, item.x, item.y, item.w, item.h);
+            resolve();
+          };
+          img.onerror = reject;
+          img.src = item.src;
+        });
+      }
+
+      async function renderToBlob(kind) {
+        var mime = getExportMime(kind);
+        var canvas = document.createElement("canvas");
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        for (var i = 0; i < state.items.length; i += 1) {
+          await drawItemToContext(ctx, state.items[i]);
+        }
+        return new Promise(function (resolve, reject) {
+          canvas.toBlob(function (blob) {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Could not export image"));
+            }
+          }, mime, kind === "jpg" ? 0.92 : 1);
+        });
+      }
+
+      function downloadBlob(blob, ext) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "collage-" + Date.now() + "." + ext;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      async function exportImage(kind) {
+        if (!state.items.length) {
+          alert("Add at least one image or text before downloading.");
+          return;
+        }
+        var blob = await renderToBlob(kind);
+        downloadBlob(blob, kind === "jpg" ? "jpg" : "png");
+        await saveRecentFromBlob(blob);
+        await loadRecentsIntoState();
+        renderRecents();
+      }
+
+      function openDb() {
+        return new Promise(function (resolve, reject) {
+          var req = indexedDB.open(DB_NAME, 1);
+          req.onupgradeneeded = function () {
+            var db = req.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME, { keyPath: "id" });
+            }
+          };
+          req.onsuccess = function () { resolve(req.result); };
+          req.onerror = function () { reject(req.error); };
+        });
+      }
+
+      async function idbPut(record) {
+        var db = await openDb();
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(STORE_NAME, "readwrite");
+          tx.objectStore(STORE_NAME).put(record);
+          tx.oncomplete = function () { resolve(); };
+          tx.onerror = function () { reject(tx.error); };
+        });
+      }
+
+      async function idbGetAll() {
+        var db = await openDb();
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(STORE_NAME, "readonly");
+          var req = tx.objectStore(STORE_NAME).getAll();
+          req.onsuccess = function () { resolve(req.result || []); };
+          req.onerror = function () { reject(req.error); };
+        });
+      }
+
+      async function idbDelete(id) {
+        var db = await openDb();
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(STORE_NAME, "readwrite");
+          tx.objectStore(STORE_NAME).delete(id);
+          tx.oncomplete = function () { resolve(); };
+          tx.onerror = function () { reject(tx.error); };
+        });
+      }
+
+      function localSaveRecord(record) {
+        var records = localLoadRecords();
+        records.push(record);
+        records = trimRecents(records, MAX_RECENTS);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      }
+
+      function localLoadRecords() {
+        try {
+          var parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (err) {
+          return [];
+        }
+      }
+
+      async function saveRecentFromBlob(blob) {
+        var id = uid("recent");
+        var createdAt = Date.now();
+        if (state.storageMode === "indexeddb") {
+          await idbPut({
+            id: id,
+            createdAt: createdAt,
+            blob: blob
+          });
+          var all = trimRecents(await idbGetAll(), MAX_RECENTS + 20);
+          if (all.length > MAX_RECENTS) {
+            for (var i = MAX_RECENTS; i < all.length; i += 1) {
+              await idbDelete(all[i].id);
+            }
+          }
+          return;
+        }
+        var base64 = await blobToDataUrl(blob);
+        localSaveRecord({
+          id: id,
+          createdAt: createdAt,
+          dataUrl: base64
+        });
+      }
+
+      function blobToDataUrl(blob) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function () { resolve(String(reader.result || "")); };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      async function loadRecentsIntoState() {
+        if (state.storageMode === "indexeddb") {
+          var all = await idbGetAll();
+          all = trimRecents(all, MAX_RECENTS);
+          state.recents = await Promise.all(all.map(async function (item) {
+            return {
+              id: item.id,
+              createdAt: item.createdAt,
+              src: URL.createObjectURL(item.blob)
+            };
+          }));
+          return;
+        }
+        var local = trimRecents(localLoadRecords(), MAX_RECENTS);
+        state.recents = local.map(function (item) {
+          return {
+            id: item.id,
+            createdAt: item.createdAt,
+            src: item.dataUrl
+          };
+        });
+      }
+
+      function renderRecents() {
+        els.recentList.innerHTML = "";
+        if (!state.recents.length) {
+          var empty = document.createElement("p");
+          empty.className = "hint";
+          empty.textContent = "No collages saved yet.";
+          els.recentList.appendChild(empty);
+          return;
+        }
+        state.recents.forEach(function (record) {
+          var card = document.createElement("article");
+          card.className = "recent-card";
+
+          var img = document.createElement("img");
+          img.src = record.src;
+          img.alt = "Saved collage preview";
+          card.appendChild(img);
+
+          var meta = document.createElement("div");
+          meta.className = "meta";
+          var t = document.createElement("time");
+          t.dateTime = new Date(record.createdAt).toISOString();
+          t.textContent = new Date(record.createdAt).toLocaleString();
+          meta.appendChild(t);
+          card.appendChild(meta);
+          els.recentList.appendChild(card);
+        });
+      }
+
+      function setupEvents() {
+        els.newCollageBtn.addEventListener("click", function () {
+          setView("editor");
+        });
+        els.backHomeBtn.addEventListener("click", function () {
+          setView("home");
+        });
+        els.clearCanvasBtn.addEventListener("click", clearCanvas);
+        els.imageUpload.addEventListener("change", handleUpload);
+        els.addTextBtn.addEventListener("click", addTextItem);
+        els.updateSelectedTextBtn.addEventListener("click", updateSelectedText);
+        els.deleteSelectedBtn.addEventListener("click", removeSelectedItem);
+        els.downloadPngBtn.addEventListener("click", function () {
+          exportImage("png").catch(function () {
+            alert("Failed to export PNG.");
+          });
+        });
+        els.downloadJpgBtn.addEventListener("click", function () {
+          exportImage("jpg").catch(function () {
+            alert("Failed to export JPG.");
+          });
+        });
+        window.addEventListener("resize", renderCanvas);
+        window.addEventListener("online", setOfflineUI);
+        window.addEventListener("offline", setOfflineUI);
+        els.canvasWrap.addEventListener("pointerdown", function (event) {
+          if (event.target === els.canvasWrap || event.target === els.canvasStage) {
+            state.selectedId = null;
+            renderCanvas();
+          }
+        });
+        window.addEventListener("keydown", function (event) {
+          if (state.view !== "editor") {
+            return;
+          }
+          if (!state.selectedId) {
+            return;
+          }
+          var step = event.shiftKey ? 10 : 1;
+          if (event.key === "ArrowLeft") {
+            moveSelectedItem(-step, 0);
+            event.preventDefault();
+          } else if (event.key === "ArrowRight") {
+            moveSelectedItem(step, 0);
+            event.preventDefault();
+          } else if (event.key === "ArrowUp") {
+            moveSelectedItem(0, -step);
+            event.preventDefault();
+          } else if (event.key === "ArrowDown") {
+            moveSelectedItem(0, step);
+            event.preventDefault();
+          }
+        });
+        els.runTestsBtn.addEventListener("click", runTests);
+      }
+
+      function createTestReport(outcomes) {
+        var passed = outcomes.filter(function (o) { return o.pass; }).length;
+        var failed = outcomes.length - passed;
+        var lines = [];
+        lines.push("Tests run: " + outcomes.length);
+        lines.push("Passed: " + passed);
+        lines.push("Failed: " + failed);
+        lines.push("");
+        outcomes.forEach(function (o) {
+          lines.push((o.pass ? "PASS " : "FAIL ") + o.name + (o.detail ? " - " + o.detail : ""));
+        });
+        return lines.join("\n");
+      }
+
+      function test(name, fn) {
+        try {
+          fn();
+          return { name: name, pass: true };
+        } catch (err) {
+          return { name: name, pass: false, detail: err.message };
+        }
+      }
+
+      function assertEqual(actual, expected, msg) {
+        if (actual !== expected) {
+          throw new Error(msg + " (expected " + expected + ", got " + actual + ")");
+        }
+      }
+
+      function assertTrue(value, msg) {
+        if (!value) {
+          throw new Error(msg);
+        }
+      }
+
+      function runTests() {
+        var outcomes = [];
+        outcomes.push(test("clamp keeps value in range", function () {
+          assertEqual(clamp(4, 0, 10), 4, "middle");
+          assertEqual(clamp(-1, 0, 10), 0, "below");
+          assertEqual(clamp(11, 0, 10), 10, "above");
+        }));
+        outcomes.push(test("trimRecents sorts descending and limits", function () {
+          var list = [
+            { createdAt: 1 }, { createdAt: 4 }, { createdAt: 2 }, { createdAt: 3 }
+          ];
+          var out = trimRecents(list, 2);
+          assertEqual(out.length, 2, "length");
+          assertEqual(out[0].createdAt, 4, "first");
+          assertEqual(out[1].createdAt, 3, "second");
+        }));
+        outcomes.push(test("export mime selects correct type", function () {
+          assertEqual(getExportMime("png"), "image/png", "png");
+          assertEqual(getExportMime("jpg"), "image/jpeg", "jpg");
+        }));
+        outcomes.push(test("storage mode selection returns known value", function () {
+          var mode = chooseStorageMode();
+          assertTrue(mode === "indexeddb" || mode === "localstorage", "mode");
+        }));
+        outcomes.push(test("text width approximation is clamped", function () {
+          var huge = approxTextWidth("abc", 1000);
+          var tiny = approxTextWidth("a", 20);
+          assertEqual(huge, CANVAS_WIDTH * 0.8, "max clamp");
+          assertTrue(tiny >= 20, "min by font size");
+        }));
+        var report = createTestReport(outcomes);
+        els.testResults.textContent = report;
+        return report;
+      }
+
+      async function initStorageMode() {
+        state.storageMode = chooseStorageMode();
+        if (state.storageMode === "indexeddb") {
+          try {
+            await openDb();
+          } catch (err) {
+            state.storageMode = "localstorage";
+          }
+        }
+      }
+
+      async function initApp() {
+        initElements();
+        setupEvents();
+        setOfflineUI();
+        await registerServiceWorker();
+        await initStorageMode();
+        await loadRecentsIntoState();
+        renderRecents();
+        renderCanvas();
+
+        if (new URLSearchParams(window.location.search).get("autorunTests") === "1") {
+          runTests();
+        }
+      }
+
+      initApp();
+      window.CollageAppTesting = {
+        clamp: clamp,
+        trimRecents: trimRecents,
+        getExportMime: getExportMime,
+        chooseStorageMode: chooseStorageMode
+      };
+    })();
+  </script>
+</body>
+</html>
