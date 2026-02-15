@@ -3,24 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pomodoro Timer</title>
+  <title>Pomodoro</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F345;</text></svg>">
   <style>
     :root {
-      --bg: #f6f7fb;
+      --bg: #f8f9fc;
+      --bg-focus: #f0f4ff;
+      --bg-break: #ecfdf5;
+      --bg-paused: #fefce8;
       --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
+      --text: #111827;
+      --text-secondary: #4b5563;
+      --muted: #9ca3af;
       --border: #e5e7eb;
       --accent: #2563eb;
-      --accent-light: #dbeafe;
-      --accent-contrast: #ffffff;
-      --green: #16a34a;
-      --green-light: #dcfce7;
+      --accent-soft: #dbeafe;
+      --accent-glow: rgba(37, 99, 235, 0.15);
+      --green: #059669;
+      --green-soft: #d1fae5;
+      --green-glow: rgba(5, 150, 105, 0.15);
       --amber: #d97706;
-      --amber-light: #fef3c7;
+      --amber-soft: #fef3c7;
+      --amber-glow: rgba(217, 119, 6, 0.15);
       --red: #dc2626;
-      --ring-size: 280px;
-      --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      --red-soft: #fee2e2;
+      --ring-size: 300px;
+      --radius: 1rem;
+      --radius-sm: 0.625rem;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,63 +40,75 @@
       color: var(--text);
       line-height: 1.5;
       min-height: 100vh;
-      transition: background-color 0.8s ease;
+      min-height: 100dvh;
+      transition: background-color 1s ease;
+      -webkit-font-smoothing: antialiased;
     }
 
-    body.state-working { background: #f0f4ff; }
-    body.state-break { background: #f0fdf4; }
-    body.state-paused { background: #fefce8; }
+    body.state-working { background: var(--bg-focus); }
+    body.state-break { background: var(--bg-break); }
+    body.state-paused { background: var(--bg-paused); }
 
     .app {
-      width: min(520px, 92%);
+      width: min(480px, 90%);
       margin: 0 auto;
-      padding: 2rem 0 3rem;
+      padding: 2.5rem 0 4rem;
     }
 
     /* ---- Header ---- */
     .app-header {
       text-align: center;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
     .app-header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-    .app-header p {
-      color: var(--muted);
-      font-size: 0.875rem;
-      margin-top: 0.25rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
     }
 
     /* ---- Cards ---- */
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 0.75rem;
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+      margin-bottom: 0.75rem;
+    }
+    .card-flush {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+      margin-bottom: 0.75rem;
+    }
+    .card-section {
       padding: 1.25rem 1.5rem;
-      box-shadow: 0 1px 3px rgba(15,23,42,0.06);
-      margin-bottom: 1rem;
+    }
+    .card-section + .card-section {
+      border-top: 1px solid var(--border);
     }
     .card h2 {
-      font-size: 0.8rem;
+      font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       color: var(--muted);
       margin-bottom: 0.75rem;
     }
 
     /* ---- Screen transitions ---- */
-    .screen {
-      display: none;
-      animation: fadeIn 0.35s ease;
+    .screen { display: none; }
+    .screen.active {
+      display: block;
+      animation: screenIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .screen.active { display: block; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     /* ---- Setup Form ---- */
@@ -97,103 +118,118 @@
       gap: 0.75rem;
       margin-bottom: 0.75rem;
     }
-    .form-row.single { grid-template-columns: 1fr; }
     .form-group label {
       display: block;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 500;
-      color: var(--muted);
+      color: var(--text-secondary);
       margin-bottom: 0.3rem;
     }
-    .form-group input, .form-group select {
+    .form-group input {
       width: 100%;
-      padding: 0.55rem 0.7rem;
+      padding: 0.5rem 0.65rem;
       border: 1px solid var(--border);
-      border-radius: 0.5rem;
-      font-size: 0.95rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
       color: var(--text);
-      background: #fff;
-      transition: border-color 0.2s;
+      background: var(--bg);
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .form-group input:focus, .form-group select:focus {
+    .form-group input:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-light);
-    }
-
-    .cycle-preview {
-      background: var(--accent-light);
-      color: var(--accent);
-      border-radius: 0.5rem;
-      padding: 0.6rem 0.8rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      text-align: center;
-      margin-bottom: 0.75rem;
-      min-height: 2.2rem;
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
     /* ---- Big Slider ---- */
     .slider-hero {
       text-align: center;
-      padding: 1.5rem 0 0.5rem;
+      padding: 2rem 0 0.75rem;
+      user-select: none;
     }
     .slider-value {
-      font-size: 4rem;
-      font-weight: 700;
+      font-size: 4.5rem;
+      font-weight: 800;
       line-height: 1;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.04em;
       color: var(--text);
+      transition: color 0.3s;
     }
-    .slider-unit {
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: var(--muted);
-      margin-top: 0.25rem;
+    .slider-context {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+      min-height: 1.3em;
+      transition: opacity 0.2s;
     }
     .slider-wrap {
-      padding: 1.25rem 0.25rem 0.25rem;
+      padding: 1rem 0.5rem 0;
     }
     .slider-wrap input[type="range"] {
       -webkit-appearance: none;
       appearance: none;
       width: 100%;
-      height: 8px;
-      border-radius: 4px;
-      background: var(--border);
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(to right, var(--accent-soft), var(--accent-soft));
+      background-size: var(--slider-fill, 50%) 100%;
+      background-repeat: no-repeat;
       outline: none;
-      transition: background 0.2s;
+    }
+    .slider-wrap input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
     }
     .slider-wrap input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
-      width: 28px;
-      height: 28px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: var(--accent);
-      cursor: pointer;
-      border: 3px solid var(--card);
-      box-shadow: 0 1px 4px rgba(37,99,235,0.3);
-      transition: transform 0.15s;
+      cursor: grab;
+      border: 4px solid var(--card);
+      box-shadow: 0 2px 8px rgba(37,99,235,0.35), 0 0 0 1px rgba(37,99,235,0.1);
+      margin-top: -19px;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
     .slider-wrap input[type="range"]::-webkit-slider-thumb:hover {
-      transform: scale(1.15);
+      transform: scale(1.1);
+      box-shadow: 0 4px 16px rgba(37,99,235,0.4), 0 0 0 1px rgba(37,99,235,0.15);
+    }
+    .slider-wrap input[type="range"]::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.05);
+    }
+    .slider-wrap input[type="range"]::-moz-range-track {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      border: none;
+    }
+    .slider-wrap input[type="range"]::-moz-range-progress {
+      height: 6px;
+      border-radius: 3px;
+      background: var(--accent-soft);
     }
     .slider-wrap input[type="range"]::-moz-range-thumb {
-      width: 28px;
-      height: 28px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       background: var(--accent);
-      cursor: pointer;
-      border: 3px solid var(--card);
-      box-shadow: 0 1px 4px rgba(37,99,235,0.3);
+      cursor: grab;
+      border: 4px solid var(--card);
+      box-shadow: 0 2px 8px rgba(37,99,235,0.35);
     }
     .slider-ticks {
       display: flex;
       justify-content: space-between;
-      padding: 0.35rem 0.15rem 0;
-      font-size: 0.7rem;
+      padding: 0.4rem 0 0;
+      font-size: 0.65rem;
+      font-weight: 500;
       color: var(--muted);
+      letter-spacing: 0.02em;
     }
 
     /* ---- Collapsible settings ---- */
@@ -201,22 +237,27 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.35rem;
+      gap: 0.4rem;
       width: 100%;
-      padding: 0.5rem;
+      padding: 0.85rem 1.5rem;
       border: none;
+      border-top: 1px solid var(--border);
       background: none;
       color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
+      font-weight: 500;
       font-family: inherit;
       cursor: pointer;
-      transition: color 0.2s;
+      transition: color 0.2s, background 0.15s;
     }
-    .collapse-toggle:hover { color: var(--text); }
+    .collapse-toggle:hover {
+      color: var(--text-secondary);
+      background: var(--bg);
+    }
     .collapse-toggle .chevron {
       display: inline-block;
-      transition: transform 0.25s ease;
-      font-size: 0.65rem;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.55rem;
     }
     .collapse-toggle.open .chevron {
       transform: rotate(180deg);
@@ -224,12 +265,15 @@
     .collapse-body {
       max-height: 0;
       overflow: hidden;
-      transition: max-height 0.3s ease, opacity 0.3s ease;
+      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
       opacity: 0;
     }
     .collapse-body.open {
       max-height: 400px;
       opacity: 1;
+    }
+    .collapse-inner {
+      padding: 0.75rem 1.5rem 1rem;
     }
 
     /* ---- Buttons ---- */
@@ -239,58 +283,81 @@
       justify-content: center;
       gap: 0.4rem;
       border: 1px solid transparent;
-      border-radius: 0.5rem;
-      padding: 0.6rem 1.1rem;
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 1.2rem;
       font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;
-      transition: filter 0.15s, box-shadow 0.15s;
+      transition: all 0.15s ease;
       font-family: inherit;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
-    .btn:hover { filter: brightness(0.95); }
-    .btn:active { transform: scale(0.98); }
+    .btn:hover { filter: brightness(0.96); }
+    .btn:active { transform: scale(0.97); }
 
     .btn-primary {
       background: var(--accent);
-      color: var(--accent-contrast);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(37,99,235,0.3);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+    .btn-primary.btn-large {
+      padding: 1rem 1.5rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      border-radius: var(--radius);
     }
     .btn-secondary {
-      background: #fff;
-      color: var(--text);
+      background: var(--bg);
+      color: var(--text-secondary);
       border-color: var(--border);
     }
-    .btn-danger {
-      background: #fff;
-      color: var(--red);
-      border-color: #fecaca;
+    .btn-ghost {
+      background: none;
+      color: var(--muted);
+      padding: 0.5rem 0.8rem;
+      font-size: 0.8rem;
     }
+    .btn-ghost:hover { color: var(--red); background: var(--red-soft); }
     .btn-success {
       background: var(--green);
       color: #fff;
+      box-shadow: 0 1px 3px rgba(5,150,105,0.3);
     }
 
     .btn-full { width: 100%; }
     .btn-group {
       display: flex;
       gap: 0.5rem;
-      margin-top: 0.75rem;
     }
     .btn-group .btn { flex: 1; }
 
+    .cta-wrap {
+      margin-top: 1rem;
+    }
+
     /* ---- Timer Display ---- */
-    .timer-container {
+    .timer-stage {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 1rem 0;
+      padding: 1.5rem 0 1rem;
     }
 
     .ring-wrap {
       position: relative;
       width: var(--ring-size);
       height: var(--ring-size);
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
+      filter: drop-shadow(0 0 0 transparent);
+      transition: filter 0.6s ease;
     }
+    .ring-wrap.glow-focus { filter: drop-shadow(0 0 24px var(--accent-glow)); }
+    .ring-wrap.glow-break { filter: drop-shadow(0 0 24px var(--green-glow)); }
+    .ring-wrap.glow-warning { filter: drop-shadow(0 0 24px var(--amber-glow)); }
 
     .ring-svg {
       width: 100%;
@@ -301,14 +368,14 @@
     .ring-bg {
       fill: none;
       stroke: var(--border);
-      stroke-width: 6;
+      stroke-width: 8;
     }
     .ring-progress {
       fill: none;
       stroke: var(--accent);
-      stroke-width: 6;
+      stroke-width: 8;
       stroke-linecap: round;
-      transition: stroke-dashoffset 1s linear, stroke 0.6s ease;
+      transition: stroke-dashoffset 1s linear, stroke 0.8s ease;
     }
     .ring-progress.break { stroke: var(--green); }
     .ring-progress.warning { stroke: var(--amber); }
@@ -323,37 +390,38 @@
     }
 
     .timer-digits {
-      font-size: 3.2rem;
-      font-weight: 700;
+      font-size: 3.8rem;
+      font-weight: 800;
       font-variant-numeric: tabular-nums;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
       line-height: 1;
+      color: var(--text);
     }
 
     .timer-label {
       font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--muted);
-      margin-top: 0.35rem;
+      font-weight: 600;
+      margin-top: 0.4rem;
+      letter-spacing: 0.02em;
     }
     .timer-label.focus-label { color: var(--accent); }
     .timer-label.break-label { color: var(--green); }
+    .timer-label.paused-label { color: var(--amber); }
 
     /* Pulse when paused */
     .paused .timer-digits {
-      animation: pulse 2s ease-in-out infinite;
+      animation: pulse 2.5s ease-in-out infinite;
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      50% { opacity: 0.3; }
     }
 
     /* ---- Cycle dots ---- */
     .cycle-dots {
       display: flex;
-      gap: 0.4rem;
+      gap: 0.5rem;
       justify-content: center;
-      margin-bottom: 1rem;
       flex-wrap: wrap;
     }
     .dot {
@@ -361,95 +429,136 @@
       height: 10px;
       border-radius: 50%;
       background: var(--border);
-      transition: background 0.3s, transform 0.3s;
+      transition: all 0.3s ease;
     }
     .dot.completed { background: var(--accent); }
     .dot.current {
       background: var(--accent);
-      transform: scale(1.35);
-      box-shadow: 0 0 0 3px var(--accent-light);
-    }
-    .dot.break-dot.completed { background: var(--green); }
-    .dot.break-dot.current {
-      background: var(--green);
-      box-shadow: 0 0 0 3px var(--green-light);
+      transform: scale(1.4);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
     /* ---- Session progress bar ---- */
-    .session-progress {
-      width: 100%;
-      margin-bottom: 1rem;
+    .session-bar {
+      padding: 0 1.5rem 1.25rem;
     }
-    .session-progress-label {
+    .session-bar-label {
       display: flex;
       justify-content: space-between;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
+      font-weight: 500;
       color: var(--muted);
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.4rem;
     }
-    .session-progress-bar {
+    .session-bar-track {
       width: 100%;
-      height: 4px;
+      height: 3px;
       background: var(--border);
       border-radius: 2px;
       overflow: hidden;
     }
-    .session-progress-fill {
+    .session-bar-fill {
       height: 100%;
       background: var(--accent);
       border-radius: 2px;
       transition: width 1s linear;
     }
 
+    /* ---- Timer controls ---- */
+    .timer-controls {
+      padding: 0 1.5rem 1.5rem;
+    }
+    .controls-primary {
+      margin-bottom: 0.5rem;
+    }
+    .controls-secondary {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .controls-secondary .btn { flex: 1; }
+
     /* ---- Auto-start overlay ---- */
     .auto-start-bar {
       display: none;
       text-align: center;
-      padding: 0.6rem;
-      background: var(--accent-light);
-      border-radius: 0.5rem;
-      margin-bottom: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--accent-soft);
       font-size: 0.85rem;
       color: var(--accent);
       font-weight: 500;
+      border-top: 1px solid var(--border);
     }
     .auto-start-bar.visible { display: block; }
+    .auto-start-bar a {
+      color: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border-bottom: 1px solid currentColor;
+    }
+    .auto-start-bar a:hover { opacity: 0.8; }
 
     /* ---- Complete Screen ---- */
-    .complete-summary {
+    .complete-hero {
       text-align: center;
-      padding: 1rem 0;
+      padding: 2.5rem 1rem 1.5rem;
     }
-    .complete-summary .big-number {
-      font-size: 3rem;
-      font-weight: 700;
+    .complete-checkmark {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--green-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+      animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .complete-checkmark svg {
+      width: 32px;
+      height: 32px;
       color: var(--green);
-      line-height: 1;
     }
-    .complete-summary .big-label {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 0.25rem;
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .complete-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .complete-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
     }
     .complete-stats {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      margin-top: 1.25rem;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-top: 1px solid var(--border);
     }
-    .stat-card {
+    .stat-cell {
       text-align: center;
-      padding: 0.75rem;
-      background: var(--bg);
-      border-radius: 0.5rem;
+      padding: 1rem 0.5rem;
+      background: var(--card);
     }
-    .stat-card .stat-value {
-      font-size: 1.4rem;
+    .stat-cell .stat-value {
+      font-size: 1.5rem;
       font-weight: 700;
+      line-height: 1;
     }
-    .stat-card .stat-label {
-      font-size: 0.75rem;
+    .stat-cell .stat-label {
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
       color: var(--muted);
+      margin-top: 0.3rem;
+    }
+    .complete-action {
+      padding: 1.25rem 1.5rem;
     }
 
     /* ---- Stats / History ---- */
@@ -459,22 +568,24 @@
       gap: 1rem;
     }
     .today-count {
-      font-size: 2rem;
-      font-weight: 700;
+      font-size: 2.25rem;
+      font-weight: 800;
       color: var(--accent);
       line-height: 1;
+      min-width: 2.5rem;
+      text-align: center;
     }
     .today-detail {
       font-size: 0.85rem;
-      color: var(--muted);
+      color: var(--text-secondary);
     }
     .today-detail strong {
       color: var(--text);
     }
     .streak-dots {
       display: flex;
-      gap: 0.3rem;
-      margin-top: 0.5rem;
+      gap: 0.35rem;
+      margin-top: 0.65rem;
       flex-wrap: wrap;
     }
     .streak-dot {
@@ -482,13 +593,21 @@
       height: 8px;
       border-radius: 50%;
       background: var(--border);
+      transition: background 0.3s;
     }
     .streak-dot.filled { background: var(--accent); }
 
+    .empty-state {
+      text-align: center;
+      padding: 0.5rem 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
     .history-list {
       margin-top: 0.75rem;
-      font-size: 0.8rem;
-      color: var(--muted);
+      font-size: 0.78rem;
+      color: var(--text-secondary);
     }
     .history-row {
       display: flex;
@@ -499,7 +618,7 @@
     .history-row:last-child { border-bottom: none; }
 
     .clear-link {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       color: var(--muted);
       cursor: pointer;
       border: none;
@@ -515,8 +634,8 @@
       position: fixed;
       bottom: 1rem;
       right: 1rem;
-      width: 32px;
-      height: 32px;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       border: 1px solid var(--border);
       background: var(--card);
@@ -527,62 +646,70 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
       z-index: 100;
       font-family: inherit;
-      transition: background 0.2s;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
     }
-    .kb-toggle:hover { background: var(--bg); }
+    .kb-toggle:hover { background: var(--bg); color: var(--text-secondary); }
 
     .kb-legend {
       position: fixed;
-      bottom: 3.2rem;
+      bottom: 3.8rem;
       right: 1rem;
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 0.5rem;
+      border-radius: var(--radius-sm);
       padding: 0.6rem 0.8rem;
       font-size: 0.75rem;
-      color: var(--muted);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      color: var(--text-secondary);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
       z-index: 100;
       display: none;
     }
-    .kb-legend.visible { display: block; animation: fadeIn 0.2s ease; }
-    .kb-legend div { padding: 0.15rem 0; }
+    .kb-legend.visible { display: block; animation: screenIn 0.2s ease; }
+    .kb-legend div { padding: 0.2rem 0; }
     .kb-legend kbd {
       display: inline-block;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
       font-size: 0.7rem;
       font-family: inherit;
-      min-width: 1.4rem;
+      min-width: 1.5rem;
       text-align: center;
+      font-weight: 500;
     }
 
     /* ---- Notification permission banner ---- */
     .notif-banner {
       display: none;
-      background: var(--amber-light);
-      border: 1px solid #fde68a;
-      border-radius: 0.5rem;
-      padding: 0.6rem 0.8rem;
+      background: var(--accent-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
       font-size: 0.8rem;
-      color: #92400e;
+      color: var(--accent);
       margin-bottom: 0.75rem;
       cursor: pointer;
+      transition: background 0.2s;
     }
-    .notif-banner:hover { background: #fef9c3; }
+    .notif-banner:hover { background: #c7d7fe; }
     .notif-banner.visible { display: block; }
 
     /* ---- Responsive ---- */
-    @media (max-width: 400px) {
-      :root { --ring-size: 220px; }
+    @media (max-width: 480px) {
+      :root { --ring-size: 240px; }
+      .timer-digits { font-size: 3rem; }
+      .slider-value { font-size: 3.5rem; }
+      .complete-stats { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 360px) {
+      :root { --ring-size: 200px; }
       .timer-digits { font-size: 2.5rem; }
-      .form-row { grid-template-columns: 1fr; }
-      .complete-stats { grid-template-columns: 1fr; }
+      .slider-value { font-size: 3rem; }
     }
   </style>
 </head>
@@ -590,60 +717,68 @@
   <div class="app">
     <header class="app-header">
       <h1>Pomodoro</h1>
-      <p>Focus timer for deep work sessions</p>
     </header>
 
     <!-- ==================== SETUP SCREEN ==================== -->
     <div id="screen-setup" class="screen active">
-      <div class="card">
-        <div class="slider-hero">
-          <div id="sliderValue" class="slider-value">2h</div>
-          <div class="slider-unit">minutes</div>
-        </div>
-        <div class="slider-wrap">
-          <input type="range" id="totalSlider" min="10" max="240" value="120" step="5">
-          <div class="slider-ticks">
-            <span>10m</span><span>1h</span><span>2h</span><span>3h</span><span>4h</span>
+      <div class="card-flush">
+        <div class="card-section">
+          <div class="slider-hero">
+            <div id="sliderValue" class="slider-value">2h</div>
+            <div id="sliderContext" class="slider-context"></div>
+          </div>
+          <div class="slider-wrap">
+            <input type="range" id="totalSlider" min="10" max="240" value="120" step="5"
+              aria-label="Session duration in minutes">
+            <div class="slider-ticks">
+              <span>10m</span><span>30m</span><span>1h</span><span>1.5h</span><span>2h</span><span>3h</span><span>4h</span>
+            </div>
           </div>
         </div>
-        <div id="cyclePreview" class="cycle-preview"></div>
 
-        <button class="collapse-toggle" id="settingsToggle">
+        <button class="collapse-toggle" id="settingsToggle"
+          aria-expanded="false" aria-controls="settingsBody">
           Customize intervals <span class="chevron">&#9660;</span>
         </button>
-        <div class="collapse-body" id="settingsBody">
-          <div class="form-row" style="margin-top:0.5rem;">
-            <div class="form-group">
-              <label for="workDuration">Focus interval (min)</label>
-              <input type="number" id="workDuration" min="5" max="90" value="25" step="5">
+        <div class="collapse-body" id="settingsBody" role="region">
+          <div class="collapse-inner">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="workDuration">Focus (min)</label>
+                <input type="number" id="workDuration" min="5" max="90" value="25" step="5">
+              </div>
+              <div class="form-group">
+                <label for="shortBreak">Short break (min)</label>
+                <input type="number" id="shortBreak" min="1" max="30" value="5" step="1">
+              </div>
             </div>
-            <div class="form-group">
-              <label for="shortBreak">Short break (min)</label>
-              <input type="number" id="shortBreak" min="1" max="30" value="5" step="1">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="longBreak">Long break (min)</label>
-              <input type="number" id="longBreak" min="5" max="45" value="15" step="5">
-            </div>
-            <div class="form-group">
-              <label for="longBreakEvery">Long break every N cycles</label>
-              <input type="number" id="longBreakEvery" min="2" max="10" value="4" step="1">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="longBreak">Long break (min)</label>
+                <input type="number" id="longBreak" min="5" max="45" value="15" step="5">
+              </div>
+              <div class="form-group">
+                <label for="longBreakEvery">Long break every</label>
+                <input type="number" id="longBreakEvery" min="2" max="10" value="4" step="1">
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div id="notifBanner" class="notif-banner">
-        Notifications are not enabled. Tap here to allow alerts when your timer ends.
+      <div id="notifBanner" class="notif-banner"
+        role="button" tabindex="0"
+        aria-label="Enable notifications">
+        Enable notifications to get alerts when your focus time ends
       </div>
 
-      <button class="btn btn-primary btn-full" id="startBtn">Start Session</button>
+      <div class="cta-wrap">
+        <button class="btn btn-primary btn-large btn-full" id="startBtn">Start Focusing</button>
+      </div>
 
       <div id="statsCard" class="card" style="margin-top:1rem;">
-        <h2>Today's Focus</h2>
-        <div id="todayStats" class="today-stats"></div>
+        <h2>Today</h2>
+        <div id="todayStats"></div>
         <div id="streakDots" class="streak-dots"></div>
         <div id="historyList" class="history-list"></div>
         <button id="clearHistoryBtn" class="clear-link" style="display:none;">Clear history</button>
@@ -652,76 +787,85 @@
 
     <!-- ==================== TIMER SCREEN ==================== -->
     <div id="screen-timer" class="screen">
-      <div class="card">
-        <div id="cycleDots" class="cycle-dots"></div>
+      <div class="card-flush">
+        <div class="card-section">
+          <div id="cycleDots" class="cycle-dots"></div>
+        </div>
 
-        <div id="timerContainer" class="timer-container">
-          <div class="ring-wrap">
+        <div class="timer-stage">
+          <div id="ringWrap" class="ring-wrap">
             <svg class="ring-svg" viewBox="0 0 200 200">
-              <circle class="ring-bg" cx="100" cy="100" r="90"/>
-              <circle id="ringProgress" class="ring-progress" cx="100" cy="100" r="90"
-                stroke-dasharray="565.49" stroke-dashoffset="0"/>
+              <circle class="ring-bg" cx="100" cy="100" r="88"/>
+              <circle id="ringProgress" class="ring-progress" cx="100" cy="100" r="88"
+                stroke-dasharray="553.00" stroke-dashoffset="553.00"/>
             </svg>
             <div class="ring-center">
               <div id="timerDigits" class="timer-digits">25:00</div>
-              <div id="timerLabel" class="timer-label">Focus</div>
+              <div id="timerLabel" class="timer-label focus-label">Focus</div>
             </div>
           </div>
         </div>
 
         <div id="autoStartBar" class="auto-start-bar"></div>
 
-        <div class="session-progress">
-          <div class="session-progress-label">
+        <div class="session-bar">
+          <div class="session-bar-label">
             <span id="sessionElapsed">0m elapsed</span>
-            <span id="sessionRemaining">120m total</span>
+            <span id="sessionRemaining">2h total</span>
           </div>
-          <div class="session-progress-bar">
-            <div id="sessionProgressFill" class="session-progress-fill" style="width:0%"></div>
+          <div class="session-bar-track">
+            <div id="sessionBarFill" class="session-bar-fill" style="width:0%"></div>
           </div>
         </div>
 
-        <div class="btn-group">
-          <button class="btn btn-secondary" id="pauseBtn">Pause</button>
-          <button class="btn btn-secondary" id="skipBtn">Skip</button>
-          <button class="btn btn-danger" id="endBtn">End</button>
+        <div class="timer-controls">
+          <div class="controls-primary">
+            <button class="btn btn-primary btn-full" id="pauseBtn">Pause</button>
+          </div>
+          <div class="controls-secondary">
+            <button class="btn btn-secondary" id="skipBtn">Skip</button>
+            <button class="btn btn-ghost" id="endBtn">End Session</button>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- ==================== COMPLETE SCREEN ==================== -->
     <div id="screen-complete" class="screen">
-      <div class="card">
-        <div class="complete-summary">
-          <div class="big-number" id="completeCycles">0</div>
-          <div class="big-label">pomodoros completed</div>
-          <div class="complete-stats">
-            <div class="stat-card">
-              <div class="stat-value" id="completeFocusTime">0m</div>
-              <div class="stat-label">Focus time</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="completeBreakTime">0m</div>
-              <div class="stat-label">Break time</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="completeTotalTime">0m</div>
-              <div class="stat-label">Total session</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="completeTodayTotal">0</div>
-              <div class="stat-label">Today's total</div>
-            </div>
+      <div class="card-flush">
+        <div class="complete-hero">
+          <div class="complete-checkmark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="complete-title" id="completeTitle">Nice work!</div>
+          <div class="complete-subtitle" id="completeSubtitle">You completed 4 pomodoros</div>
+        </div>
+        <div class="complete-stats">
+          <div class="stat-cell">
+            <div class="stat-value" id="completeFocusTime">0m</div>
+            <div class="stat-label">Focus</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-value" id="completeBreakTime">0m</div>
+            <div class="stat-label">Breaks</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-value" id="completeTodayTotal">0</div>
+            <div class="stat-label">Today</div>
           </div>
         </div>
-        <button class="btn btn-success btn-full" id="restartBtn" style="margin-top:1rem;">Start Another Session</button>
+        <div class="complete-action">
+          <button class="btn btn-success btn-full" id="restartBtn">Start Again</button>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Keyboard shortcut legend -->
-  <button class="kb-toggle" id="kbToggle" title="Keyboard shortcuts">?</button>
-  <div class="kb-legend" id="kbLegend">
+  <button class="kb-toggle" id="kbToggle" title="Keyboard shortcuts" aria-label="Show keyboard shortcuts">?</button>
+  <div class="kb-legend" id="kbLegend" role="tooltip">
     <div><kbd>Space</kbd> Pause / Resume</div>
     <div><kbd>S</kbd> Skip interval</div>
     <div><kbd>Esc</kbd> End session</div>
@@ -733,20 +877,21 @@
 
       // ======== Constants ========
       var STORAGE_KEY = "nick_pomodoro_v1";
-      var CIRCUMFERENCE = 2 * Math.PI * 90; // ~565.49, matches SVG r=90
+      var RING_RADIUS = 88;
+      var CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS; // ~553.00
 
       // ======== DOM refs ========
       var $ = function (id) { return document.getElementById(id); };
 
       var totalSlider = $("totalSlider");
-      var sliderValue = $("sliderValue");
+      var sliderValueEl = $("sliderValue");
+      var sliderContext = $("sliderContext");
       var settingsToggle = $("settingsToggle");
       var settingsBody = $("settingsBody");
       var workDurationInput = $("workDuration");
       var shortBreakInput = $("shortBreak");
       var longBreakInput = $("longBreak");
       var longBreakEveryInput = $("longBreakEvery");
-      var cyclePreview = $("cyclePreview");
       var notifBanner = $("notifBanner");
       var startBtn = $("startBtn");
 
@@ -755,27 +900,27 @@
       var screenComplete = $("screen-complete");
 
       var cycleDots = $("cycleDots");
-      var timerContainer = $("timerContainer");
+      var ringWrap = $("ringWrap");
       var ringProgress = $("ringProgress");
       var timerDigits = $("timerDigits");
       var timerLabel = $("timerLabel");
       var autoStartBar = $("autoStartBar");
       var sessionElapsed = $("sessionElapsed");
       var sessionRemaining = $("sessionRemaining");
-      var sessionProgressFill = $("sessionProgressFill");
+      var sessionBarFill = $("sessionBarFill");
       var pauseBtn = $("pauseBtn");
       var skipBtn = $("skipBtn");
       var endBtn = $("endBtn");
 
-      var completeCycles = $("completeCycles");
+      var completeTitle = $("completeTitle");
+      var completeSubtitle = $("completeSubtitle");
       var completeFocusTime = $("completeFocusTime");
       var completeBreakTime = $("completeBreakTime");
-      var completeTotalTime = $("completeTotalTime");
       var completeTodayTotal = $("completeTodayTotal");
       var restartBtn = $("restartBtn");
 
-      var todayStats = $("todayStats");
-      var streakDots = $("streakDots");
+      var todayStatsEl = $("todayStats");
+      var streakDotsEl = $("streakDots");
       var historyList = $("historyList");
       var clearHistoryBtn = $("clearHistoryBtn");
 
@@ -783,7 +928,7 @@
       var kbLegend = $("kbLegend");
 
       // ======== State ========
-      var session = null; // active session state
+      var session = null;
       var tickInterval = null;
       var autoStartTimeout = null;
       var autoStartCountdown = 0;
@@ -804,48 +949,47 @@
         return String(m).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
       }
 
-      function formatMinutes(m) {
-        if (m < 60) return Math.round(m) + "m";
+      function formatMins(m) {
+        m = Math.round(m);
+        if (m < 60) return m + "m";
         var h = Math.floor(m / 60);
-        var rem = Math.round(m % 60);
+        var rem = m % 60;
         return rem > 0 ? h + "h " + rem + "m" : h + "h";
       }
 
-      function clamp(val, min, max) {
-        return Math.max(min, Math.min(max, val));
+      function clamp(val, lo, hi) {
+        return Math.max(lo, Math.min(hi, val));
       }
 
       // ======== localStorage ========
-      function loadHistory() {
+      function loadData() {
         try {
           var raw = localStorage.getItem(STORAGE_KEY);
           if (!raw) return { days: {}, prefs: null };
-          var parsed = JSON.parse(raw);
-          if (!parsed || typeof parsed !== "object") return { days: {}, prefs: null };
-          if (!parsed.days) parsed.days = {};
-          return parsed;
+          var p = JSON.parse(raw);
+          if (!p || typeof p !== "object") return { days: {}, prefs: null };
+          if (!p.days) p.days = {};
+          return p;
         } catch (e) {
           return { days: {}, prefs: null };
         }
       }
 
-      function saveHistory(data) {
+      function saveData(data) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       }
 
-      function recordSession(pomodorosCompleted, focusMinutes) {
-        var data = loadHistory();
+      function recordSession(cycles, focusMin) {
+        var data = loadData();
         var key = todayKey();
-        if (!data.days[key]) {
-          data.days[key] = { pomodoros: 0, focusMinutes: 0 };
-        }
-        data.days[key].pomodoros += pomodorosCompleted;
-        data.days[key].focusMinutes += focusMinutes;
-        saveHistory(data);
+        if (!data.days[key]) data.days[key] = { pomodoros: 0, focusMinutes: 0 };
+        data.days[key].pomodoros += cycles;
+        data.days[key].focusMinutes += focusMin;
+        saveData(data);
       }
 
       function savePrefs() {
-        var data = loadHistory();
+        var data = loadData();
         data.prefs = {
           totalMinutes: parseInt(totalSlider.value, 10) || 120,
           workDuration: parseInt(workDurationInput.value, 10) || 25,
@@ -853,11 +997,11 @@
           longBreak: parseInt(longBreakInput.value, 10) || 15,
           longBreakEvery: parseInt(longBreakEveryInput.value, 10) || 4
         };
-        saveHistory(data);
+        saveData(data);
       }
 
       function loadPrefs() {
-        var data = loadHistory();
+        var data = loadData();
         if (data.prefs) {
           totalSlider.value = clamp(data.prefs.totalMinutes || 120, 10, 240);
           workDurationInput.value = data.prefs.workDuration || 25;
@@ -880,40 +1024,35 @@
       function playChime(type) {
         try {
           var ctx = getAudioCtx();
-          // type: "work-end", "break-end", "warning", "complete"
-          var freqs, durations;
+          var notes, lengths;
           if (type === "warning") {
-            freqs = [440, 440];
-            durations = [0.12, 0.12];
+            notes = [523.25, 523.25];
+            lengths = [0.1, 0.1];
           } else if (type === "complete") {
-            freqs = [523.25, 659.25, 783.99, 1046.5];
-            durations = [0.15, 0.15, 0.15, 0.3];
+            notes = [523.25, 659.25, 783.99, 1046.5];
+            lengths = [0.12, 0.12, 0.12, 0.3];
           } else if (type === "break-end") {
-            freqs = [523.25, 659.25];
-            durations = [0.15, 0.2];
+            notes = [440, 523.25, 659.25];
+            lengths = [0.1, 0.1, 0.18];
           } else {
-            // work-end
-            freqs = [659.25, 523.25];
-            durations = [0.15, 0.25];
+            notes = [659.25, 587.33, 523.25];
+            lengths = [0.1, 0.1, 0.2];
           }
-
-          var time = ctx.currentTime;
-          for (var i = 0; i < freqs.length; i++) {
+          var t = ctx.currentTime + 0.05;
+          for (var i = 0; i < notes.length; i++) {
             var osc = ctx.createOscillator();
             var gain = ctx.createGain();
             osc.type = "sine";
-            osc.frequency.value = freqs[i];
-            gain.gain.setValueAtTime(0.15, time);
-            gain.gain.exponentialRampToValueAtTime(0.001, time + durations[i]);
+            osc.frequency.value = notes[i];
+            gain.gain.setValueAtTime(0.12, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + lengths[i]);
             osc.connect(gain);
             gain.connect(ctx.destination);
-            osc.start(time);
-            osc.stop(time + durations[i]);
-            time += durations[i] + 0.05;
+            osc.start(t);
+            osc.stop(t + lengths[i] + 0.01);
+            t += lengths[i] + 0.04;
           }
-        } catch (e) {
-          // Audio not available, fail silently
-        }
+        } catch (e) {}
       }
 
       // ======== Notifications ========
@@ -934,10 +1073,8 @@
       }
 
       function sendNotif(title, body) {
-        if (!("Notification" in window)) return;
-        if (Notification.permission === "granted") {
-          try { new Notification(title, { body: body, icon: "" }); } catch (e) {}
-        }
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        try { new Notification(title, { body: body }); } catch (e) {}
       }
 
       // ======== Cycle Calculation ========
@@ -948,26 +1085,18 @@
         var longMin = clamp(parseInt(longBreakInput.value, 10) || 15, 5, 45);
         var longEvery = clamp(parseInt(longBreakEveryInput.value, 10) || 4, 2, 10);
 
-        // Build the sequence of intervals that fit into totalMin
-        var intervals = []; // {type: "work"|"short"|"long", duration: minutes}
+        var intervals = [];
         var elapsed = 0;
         var cycleCount = 0;
 
         while (true) {
-          // Add a work interval
-          if (elapsed + workMin > totalMin + 1) break; // allow 1 min tolerance
+          if (elapsed + workMin > totalMin + 1) break;
           intervals.push({ type: "work", duration: workMin });
           elapsed += workMin;
           cycleCount++;
-
-          // Are we done?
           if (elapsed >= totalMin) break;
-
-          // Add a break
           var isLong = cycleCount % longEvery === 0;
           var breakDur = isLong ? longMin : shortMin;
-
-          // Don't add a break if remaining time is less than the break itself
           if (elapsed + breakDur > totalMin) break;
           intervals.push({ type: isLong ? "long" : "short", duration: breakDur });
           elapsed += breakDur;
@@ -977,25 +1106,33 @@
           intervals: intervals,
           totalCycles: cycleCount,
           totalMinutes: elapsed,
-          workMinPerCycle: workMin,
-          shortBreakMin: shortMin,
-          longBreakMin: longMin,
-          longBreakEvery: longEvery
+          workMinPerCycle: workMin
         };
       }
 
-      function updatePreview() {
-        var plan = calculatePlan();
-        var totalFocus = plan.intervals.reduce(function (sum, i) {
-          return i.type === "work" ? sum + i.duration : sum;
-        }, 0);
-        if (plan.totalCycles === 0) {
-          cyclePreview.textContent = "Session too short for even one focus interval.";
-          return;
+      // ======== Slider display ========
+      function updateSlider() {
+        var val = parseInt(totalSlider.value, 10);
+        // Display value
+        if (val >= 60) {
+          var h = Math.floor(val / 60);
+          var m = val % 60;
+          sliderValueEl.textContent = m > 0 ? h + "h " + m + "m" : h + "h";
+        } else {
+          sliderValueEl.textContent = val + "m";
         }
-        cyclePreview.textContent =
-          plan.totalCycles + " focus interval" + (plan.totalCycles === 1 ? "" : "s") +
-          " (" + formatMinutes(totalFocus) + " focus) in ~" + formatMinutes(plan.totalMinutes);
+        // Context line
+        var plan = calculatePlan();
+        if (plan.totalCycles === 0) {
+          sliderContext.textContent = "Too short for a focus interval";
+        } else {
+          var focusTotal = plan.intervals.reduce(function (s, i) {
+            return i.type === "work" ? s + i.duration : s;
+          }, 0);
+          sliderContext.textContent =
+            plan.totalCycles + " x " + plan.workMinPerCycle + "min focus" +
+            (plan.totalCycles > 1 ? " with breaks" : "");
+        }
       }
 
       // ======== Screen management ========
@@ -1003,13 +1140,11 @@
         screenSetup.classList.remove("active");
         screenTimer.classList.remove("active");
         screenComplete.classList.remove("active");
+        document.body.className = "";
 
         if (name === "setup") screenSetup.classList.add("active");
         else if (name === "timer") screenTimer.classList.add("active");
         else if (name === "complete") screenComplete.classList.add("active");
-
-        // Body state classes
-        document.body.className = "";
       }
 
       // ======== Timer engine ========
@@ -1019,12 +1154,9 @@
 
         savePrefs();
 
-        // Request notification permission if not yet granted
         if ("Notification" in window && Notification.permission === "default") {
           requestNotifPermission();
         }
-
-        // Resume audio context (needed after user gesture)
         try { getAudioCtx().resume(); } catch (e) {}
 
         session = {
@@ -1035,11 +1167,10 @@
           totalFocusSeconds: 0,
           totalBreakSeconds: 0,
           sessionStartTime: Date.now(),
-          // Current interval timer
           intervalEndTime: 0,
-          intervalDuration: 0, // seconds
+          intervalDuration: 0,
           paused: false,
-          pausedRemaining: 0, // seconds remaining when paused
+          pausedRemaining: 0,
           fiveMinWarned: false
         };
 
@@ -1069,31 +1200,33 @@
         renderCycleDots();
         renderTimerDisplay();
 
-        // Notify the start of breaks
         if (interval.type === "short" || interval.type === "long") {
-          var breakLabel = interval.type === "long" ? "Long break" : "Short break";
-          sendNotif("Time for a break!", breakLabel + " - " + interval.duration + " minutes. Step away and recharge.");
+          var bLabel = interval.type === "long" ? "Long break" : "Short break";
+          sendNotif("Time for a break!", bLabel + " \u2014 " + interval.duration + " min");
           playChime("work-end");
         } else if (index > 0) {
-          // Starting a new work interval after a break
-          sendNotif("Break's over!", "Time to focus. " + interval.duration + " minutes of deep work.");
+          sendNotif("Break\u2019s over!", interval.duration + " minutes of focus time");
           playChime("break-end");
         }
       }
 
       function updateBodyState() {
         document.body.className = "";
+        ringWrap.className = "ring-wrap";
         if (!session) return;
+        var timerStage = document.querySelector(".timer-stage");
         if (session.paused) {
           document.body.classList.add("state-paused");
-          timerContainer.classList.add("paused");
+          timerStage.classList.add("paused");
         } else {
-          timerContainer.classList.remove("paused");
+          timerStage.classList.remove("paused");
           var interval = session.intervals[session.currentIndex];
           if (interval.type === "work") {
             document.body.classList.add("state-working");
+            ringWrap.classList.add("glow-focus");
           } else {
             document.body.classList.add("state-break");
+            ringWrap.classList.add("glow-break");
           }
         }
       }
@@ -1106,8 +1239,8 @@
 
       function startTicking() {
         stopTicking();
-        tick(); // immediate first render
-        tickInterval = setInterval(tick, 250); // tick 4x/sec for smooth display
+        tick();
+        tickInterval = setInterval(tick, 250);
       }
 
       function stopTicking() {
@@ -1124,28 +1257,38 @@
         var interval = session.intervals[session.currentIndex];
         var elapsed = session.intervalDuration - remaining;
 
-        // Update digits
+        // Digits
         timerDigits.textContent = formatTime(remaining);
 
-        // Update ring
+        // Ring
         var progress = session.intervalDuration > 0 ? elapsed / session.intervalDuration : 0;
         var offset = CIRCUMFERENCE * (1 - progress);
         ringProgress.style.strokeDashoffset = Math.max(0, offset);
 
-        // Ring color
+        // Ring color + glow
         ringProgress.classList.remove("break", "warning");
-        if (interval.type !== "work") {
+        ringWrap.className = "ring-wrap";
+        if (session.paused) {
+          // no glow
+        } else if (interval.type !== "work") {
           ringProgress.classList.add("break");
+          ringWrap.classList.add("glow-break");
         } else if (remaining <= 300 && remaining > 0) {
           ringProgress.classList.add("warning");
+          ringWrap.classList.add("glow-warning");
+        } else {
+          ringWrap.classList.add("glow-focus");
         }
 
         // Tab title
         var stateLabel = interval.type === "work" ? "Focus" : "Break";
-        document.title = formatTime(remaining) + " - " + stateLabel + " | Pomodoro";
+        document.title = formatTime(remaining) + " \u2014 " + stateLabel + " | Pomodoro";
 
         // Timer label
-        if (interval.type === "work") {
+        if (session.paused) {
+          timerLabel.textContent = "Paused";
+          timerLabel.className = "timer-label paused-label";
+        } else if (interval.type === "work") {
           var workNum = 0;
           for (var i = 0; i <= session.currentIndex; i++) {
             if (session.intervals[i].type === "work") workNum++;
@@ -1158,50 +1301,46 @@
         }
 
         // Session progress
-        var totalSessionSeconds = session.plan.totalMinutes * 60;
-        var sessionElapsedSec = (Date.now() - session.sessionStartTime) / 1000;
-        sessionElapsed.textContent = formatMinutes(sessionElapsedSec / 60) + " elapsed";
-        sessionRemaining.textContent = formatMinutes(session.plan.totalMinutes) + " total";
-        var sessionPct = Math.min(100, (sessionElapsedSec / totalSessionSeconds) * 100);
-        sessionProgressFill.style.width = sessionPct + "%";
+        var totalSec = session.plan.totalMinutes * 60;
+        var sessElapsed = (Date.now() - session.sessionStartTime) / 1000;
+        sessionElapsed.textContent = formatMins(sessElapsed / 60) + " elapsed";
+        sessionRemaining.textContent = formatMins(session.plan.totalMinutes) + " total";
+        sessionBarFill.style.width = Math.min(100, (sessElapsed / totalSec) * 100) + "%";
 
-        // 5-minute warning (only for intervals longer than 5 min)
-        if (!session.paused && interval.type === "work" && !session.fiveMinWarned && session.intervalDuration > 300 && remaining <= 300 && remaining > 0) {
+        // 5-min warning
+        if (!session.paused && interval.type === "work" && !session.fiveMinWarned &&
+            session.intervalDuration > 300 && remaining <= 300 && remaining > 0) {
           session.fiveMinWarned = true;
-          sendNotif("5 minutes left", "Wrap up your current task soon.");
+          sendNotif("5 minutes left", "Start wrapping up your current task");
           playChime("warning");
         }
 
-        // Interval complete?
+        // Interval complete
         if (!session.paused && remaining <= 0) {
-          // Track time
           if (interval.type === "work") {
             session.totalFocusSeconds += session.intervalDuration;
             session.completedCycles++;
           } else {
             session.totalBreakSeconds += session.intervalDuration;
           }
-
-          // Move to next interval
-          var nextIndex = session.currentIndex + 1;
-          if (nextIndex >= session.intervals.length) {
+          var nextIdx = session.currentIndex + 1;
+          if (nextIdx >= session.intervals.length) {
             finishSession();
           } else {
-            // Auto-start with countdown
-            beginAutoStart(nextIndex);
+            beginAutoStart(nextIdx);
           }
         }
       }
 
-      // ======== Auto-start between intervals ========
+      // ======== Auto-start ========
       function beginAutoStart(nextIndex) {
         stopTicking();
         autoStartCountdown = 5;
-        var nextInterval = session.intervals[nextIndex];
-        var nextLabel = nextInterval.type === "work" ? "Focus" : (nextInterval.type === "long" ? "Long Break" : "Short Break");
+        var next = session.intervals[nextIndex];
+        var label = next.type === "work" ? "Focus" : (next.type === "long" ? "Long Break" : "Break");
 
         autoStartBar.classList.add("visible");
-        updateAutoStartDisplay(nextLabel);
+        renderAutoStart(label);
 
         autoStartTimeout = setInterval(function () {
           autoStartCountdown--;
@@ -1212,44 +1351,29 @@
             startInterval(nextIndex);
             startTicking();
           } else {
-            updateAutoStartDisplay(nextLabel);
+            renderAutoStart(label);
           }
         }, 1000);
       }
 
-      function updateAutoStartDisplay(label) {
-        autoStartBar.innerHTML = label + " starts in <strong>" + autoStartCountdown + "s</strong> &mdash; " +
-          "<span style='text-decoration:underline;cursor:pointer' onclick='window._pomoStartNow()'>Start now</span> &nbsp; " +
-          "<span style='text-decoration:underline;cursor:pointer' onclick='window._pomoSkipFromAuto()'>Skip</span>";
+      function renderAutoStart(label) {
+        autoStartBar.innerHTML = label + " in <strong>" + autoStartCountdown + "s</strong> &nbsp;\u00b7&nbsp; " +
+          "<a onclick='window._pomoNow()'>Start now</a> &nbsp;\u00b7&nbsp; " +
+          "<a onclick='window._pomoSkipAuto()'>Skip</a>";
       }
 
-      window._pomoStartNow = function () {
-        if (autoStartTimeout) {
-          clearInterval(autoStartTimeout);
-          autoStartTimeout = null;
-        }
+      window._pomoNow = function () {
+        if (autoStartTimeout) { clearInterval(autoStartTimeout); autoStartTimeout = null; }
         autoStartBar.classList.remove("visible");
-        var nextIndex = session.currentIndex + 1;
-        startInterval(nextIndex);
+        startInterval(session.currentIndex + 1);
         startTicking();
       };
 
-      window._pomoSkipFromAuto = function () {
-        if (autoStartTimeout) {
-          clearInterval(autoStartTimeout);
-          autoStartTimeout = null;
-        }
+      window._pomoSkipAuto = function () {
+        if (autoStartTimeout) { clearInterval(autoStartTimeout); autoStartTimeout = null; }
         autoStartBar.classList.remove("visible");
-
-        // Skip the next interval too
-        var skippedIndex = session.currentIndex + 1;
-        var skippedInterval = session.intervals[skippedIndex];
-        // If skipping a break, track it
-        if (skippedInterval && skippedInterval.type !== "work") {
-          session.totalBreakSeconds += 0; // skipped, don't count
-        }
-
-        var nextNext = skippedIndex + 1;
+        var skipIdx = session.currentIndex + 1;
+        var nextNext = skipIdx + 1;
         if (nextNext >= session.intervals.length) {
           finishSession();
         } else {
@@ -1258,17 +1382,14 @@
         }
       };
 
-      // ======== Pause / Resume / Skip / End ========
+      // ======== Controls ========
       function togglePause() {
         if (!session) return;
-
         if (session.paused) {
-          // Resume
           session.intervalEndTime = Date.now() + session.pausedRemaining * 1000;
           session.paused = false;
           pauseBtn.textContent = "Pause";
         } else {
-          // Pause
           session.pausedRemaining = getRemainingSeconds();
           session.paused = true;
           pauseBtn.textContent = "Resume";
@@ -1278,84 +1399,67 @@
 
       function skipInterval() {
         if (!session) return;
-
-        // Cancel any auto-start
         if (autoStartTimeout) {
           clearInterval(autoStartTimeout);
           autoStartTimeout = null;
           autoStartBar.classList.remove("visible");
         }
-
         var interval = session.intervals[session.currentIndex];
         var elapsedSec = session.intervalDuration - getRemainingSeconds();
-
         if (interval.type === "work") {
           session.totalFocusSeconds += elapsedSec;
-          // Only count as completed if more than half was done
-          if (elapsedSec > session.intervalDuration * 0.5) {
-            session.completedCycles++;
-          }
+          if (elapsedSec > session.intervalDuration * 0.5) session.completedCycles++;
         } else {
           session.totalBreakSeconds += elapsedSec;
         }
-
-        var nextIndex = session.currentIndex + 1;
-        if (nextIndex >= session.intervals.length) {
+        var nextIdx = session.currentIndex + 1;
+        if (nextIdx >= session.intervals.length) {
           finishSession();
         } else {
           session.paused = false;
           pauseBtn.textContent = "Pause";
-          startInterval(nextIndex);
+          startInterval(nextIdx);
         }
       }
 
       function endSession() {
         if (!session) return;
-        // Count partial current interval
         var interval = session.intervals[session.currentIndex];
         var elapsedSec = session.intervalDuration - getRemainingSeconds();
-
         if (interval.type === "work") {
           session.totalFocusSeconds += elapsedSec;
-          if (elapsedSec > session.intervalDuration * 0.5) {
-            session.completedCycles++;
-          }
+          if (elapsedSec > session.intervalDuration * 0.5) session.completedCycles++;
         } else {
           session.totalBreakSeconds += elapsedSec;
         }
-
         finishSession();
       }
 
       function finishSession() {
         stopTicking();
-        if (autoStartTimeout) {
-          clearInterval(autoStartTimeout);
-          autoStartTimeout = null;
-        }
+        if (autoStartTimeout) { clearInterval(autoStartTimeout); autoStartTimeout = null; }
         autoStartBar.classList.remove("visible");
 
         var focusMin = Math.round(session.totalFocusSeconds / 60);
         var breakMin = Math.round(session.totalBreakSeconds / 60);
-        var totalMin = Math.round((Date.now() - session.sessionStartTime) / 60000);
         var cycles = session.completedCycles;
 
-        // Save to history
         recordSession(cycles, focusMin);
 
-        // Show complete screen
-        completeCycles.textContent = cycles;
-        completeFocusTime.textContent = formatMinutes(focusMin);
-        completeBreakTime.textContent = formatMinutes(breakMin);
-        completeTotalTime.textContent = formatMinutes(totalMin);
+        // Complete screen
+        var messages = ["Nice work!", "Well done!", "Great session!", "Solid focus!"];
+        completeTitle.textContent = messages[Math.floor(Math.random() * messages.length)];
+        completeSubtitle.textContent = cycles + " pomodoro" + (cycles === 1 ? "" : "s") + " completed";
 
-        var data = loadHistory();
+        completeFocusTime.textContent = formatMins(focusMin);
+        completeBreakTime.textContent = formatMins(breakMin);
+
+        var data = loadData();
         var today = data.days[todayKey()];
         completeTodayTotal.textContent = today ? today.pomodoros : cycles;
 
-        document.title = "Session Complete | Pomodoro";
-
-        sendNotif("Session Complete!", cycles + " pomodoro" + (cycles === 1 ? "" : "s") + " done. " + formatMinutes(focusMin) + " of focus time.");
+        document.title = "Done! | Pomodoro";
+        sendNotif("Session complete!", cycles + " pomodoro" + (cycles === 1 ? "" : "s") + " \u2014 " + formatMins(focusMin) + " of focus");
         playChime("complete");
 
         session = null;
@@ -1366,124 +1470,96 @@
       function renderCycleDots() {
         if (!session) return;
         var html = "";
-        var workIndex = 0;
         for (var i = 0; i < session.intervals.length; i++) {
-          var interval = session.intervals[i];
-          if (interval.type === "work") {
-            var cls = "dot";
-            // Count completed work intervals
-            var worksBefore = 0;
-            for (var j = 0; j < i; j++) {
-              if (session.intervals[j].type === "work") worksBefore++;
-            }
-            if (worksBefore < session.completedCycles) {
-              cls += " completed";
-            } else if (i === session.currentIndex) {
-              cls += " current";
-            }
-            html += '<span class="' + cls + '"></span>';
+          if (session.intervals[i].type !== "work") continue;
+          var cls = "dot";
+          var worksBefore = 0;
+          for (var j = 0; j < i; j++) {
+            if (session.intervals[j].type === "work") worksBefore++;
           }
+          if (worksBefore < session.completedCycles) {
+            cls += " completed";
+          } else if (i === session.currentIndex) {
+            cls += " current";
+          }
+          html += '<span class="' + cls + '"></span>';
         }
         cycleDots.innerHTML = html;
       }
 
       function renderTimerDisplay() {
         if (!session) return;
-        var remaining = getRemainingSeconds();
-        timerDigits.textContent = formatTime(remaining);
-
-        var interval = session.intervals[session.currentIndex];
+        timerDigits.textContent = formatTime(getRemainingSeconds());
         ringProgress.style.strokeDashoffset = String(CIRCUMFERENCE);
         ringProgress.classList.remove("break", "warning");
-        if (interval.type !== "work") {
+        if (session.intervals[session.currentIndex].type !== "work") {
           ringProgress.classList.add("break");
         }
       }
 
       function renderTodayStats() {
-        var data = loadHistory();
+        var data = loadData();
         var today = data.days[todayKey()];
         var pomos = today ? today.pomodoros : 0;
         var focus = today ? today.focusMinutes : 0;
 
-        todayStats.innerHTML =
-          '<div class="today-count">' + pomos + '</div>' +
-          '<div class="today-detail">' +
-            '<strong>' + pomos + ' pomodoro' + (pomos === 1 ? '' : 's') + '</strong> today<br>' +
-            formatMinutes(focus) + ' of focus time' +
-          '</div>';
+        if (pomos === 0) {
+          todayStatsEl.innerHTML = '<div class="empty-state">No sessions yet today. Ready to focus?</div>';
+          streakDotsEl.innerHTML = "";
+        } else {
+          todayStatsEl.innerHTML =
+            '<div class="today-stats">' +
+              '<div class="today-count">' + pomos + '</div>' +
+              '<div class="today-detail">' +
+                '<strong>' + pomos + ' pomodoro' + (pomos === 1 ? '' : 's') + '</strong><br>' +
+                formatMins(focus) + ' of focus time' +
+              '</div>' +
+            '</div>';
 
-        // Streak dots: show up to 12 dots for today's pomodoros
-        var maxDots = Math.max(pomos, 8);
-        var dotsHtml = "";
-        for (var i = 0; i < maxDots; i++) {
-          dotsHtml += '<span class="streak-dot' + (i < pomos ? ' filled' : '') + '"></span>';
+          var maxDots = Math.max(pomos, 8);
+          var dots = "";
+          for (var i = 0; i < maxDots; i++) {
+            dots += '<span class="streak-dot' + (i < pomos ? ' filled' : '') + '"></span>';
+          }
+          streakDotsEl.innerHTML = dots;
         }
-        streakDots.innerHTML = dotsHtml;
 
-        // Recent history (last 7 days with data)
+        // Recent history
         var keys = Object.keys(data.days).sort().reverse().slice(0, 7);
         if (keys.length > 0) {
           var rows = keys.map(function (key) {
             var d = data.days[key];
             var label = key === todayKey() ? "Today" : key;
             return '<div class="history-row"><span>' + label + '</span><span>' +
-              d.pomodoros + ' pom &middot; ' + formatMinutes(d.focusMinutes) + '</span></div>';
+              d.pomodoros + ' pom \u00b7 ' + formatMins(d.focusMinutes) + '</span></div>';
           }).join("");
           historyList.innerHTML = rows;
           clearHistoryBtn.style.display = "inline";
         } else {
-          historyList.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">No sessions yet. Start one above!</div>';
+          historyList.innerHTML = "";
           clearHistoryBtn.style.display = "none";
         }
       }
 
-      // ======== Slider display sync ========
-      function updateSliderDisplay() {
-        var val = parseInt(totalSlider.value, 10);
-        if (val >= 60) {
-          var h = Math.floor(val / 60);
-          var m = val % 60;
-          sliderValue.textContent = m > 0 ? h + "h " + m + "m" : h + "h";
-        } else {
-          sliderValue.textContent = val + "m";
-        }
-      }
-
       // ======== Event listeners ========
-      totalSlider.addEventListener("input", function () {
-        updateSliderDisplay();
-        updatePreview();
-      });
-      workDurationInput.addEventListener("input", updatePreview);
-      shortBreakInput.addEventListener("input", updatePreview);
-      longBreakInput.addEventListener("input", updatePreview);
-      longBreakEveryInput.addEventListener("input", updatePreview);
+      totalSlider.addEventListener("input", updateSlider);
+      workDurationInput.addEventListener("input", updateSlider);
+      shortBreakInput.addEventListener("input", updateSlider);
+      longBreakInput.addEventListener("input", updateSlider);
+      longBreakEveryInput.addEventListener("input", updateSlider);
 
       settingsToggle.addEventListener("click", function () {
+        var open = settingsBody.classList.toggle("open");
         settingsToggle.classList.toggle("open");
-        settingsBody.classList.toggle("open");
+        settingsToggle.setAttribute("aria-expanded", open ? "true" : "false");
       });
 
-      notifBanner.addEventListener("click", function () {
-        requestNotifPermission();
-      });
+      notifBanner.addEventListener("click", requestNotifPermission);
 
-      startBtn.addEventListener("click", function () {
-        startSession();
-      });
-
-      pauseBtn.addEventListener("click", function () {
-        togglePause();
-      });
-
-      skipBtn.addEventListener("click", function () {
-        skipInterval();
-      });
-
-      endBtn.addEventListener("click", function () {
-        endSession();
-      });
+      startBtn.addEventListener("click", startSession);
+      pauseBtn.addEventListener("click", togglePause);
+      skipBtn.addEventListener("click", skipInterval);
+      endBtn.addEventListener("click", endSession);
 
       restartBtn.addEventListener("click", function () {
         document.title = originalTitle;
@@ -1492,34 +1568,23 @@
       });
 
       clearHistoryBtn.addEventListener("click", function () {
-        var data = loadHistory();
+        var data = loadData();
         data.days = {};
-        saveHistory(data);
+        saveData(data);
         renderTodayStats();
       });
 
-      // Keyboard shortcuts
       kbToggle.addEventListener("click", function () {
         kbLegend.classList.toggle("visible");
       });
 
       document.addEventListener("keydown", function (e) {
-        // Don't capture when typing in inputs
         if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
-
-        if (e.code === "Space" && session) {
-          e.preventDefault();
-          togglePause();
-        } else if ((e.key === "s" || e.key === "S") && session) {
-          e.preventDefault();
-          skipInterval();
-        } else if (e.key === "Escape" && session) {
-          e.preventDefault();
-          endSession();
-        }
+        if (e.code === "Space" && session) { e.preventDefault(); togglePause(); }
+        else if ((e.key === "s" || e.key === "S") && session) { e.preventDefault(); skipInterval(); }
+        else if (e.key === "Escape" && session) { e.preventDefault(); endSession(); }
       });
 
-      // Close legend on click outside
       document.addEventListener("click", function (e) {
         if (e.target !== kbToggle && !kbLegend.contains(e.target)) {
           kbLegend.classList.remove("visible");
@@ -1528,8 +1593,7 @@
 
       // ======== Init ========
       loadPrefs();
-      updateSliderDisplay();
-      updatePreview();
+      updateSlider();
       checkNotifPermission();
       renderTodayStats();
 
