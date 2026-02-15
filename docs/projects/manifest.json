@@ -4,4 +4,9 @@
     "title": "Example: Daily Standup Notes with Cursor",
     "path": "projects/example/"
   }
+  {
+    "name": "jia",
+    "title": "To-Do list demo",
+    "path": "projects/jia/"
+  }
 ]
