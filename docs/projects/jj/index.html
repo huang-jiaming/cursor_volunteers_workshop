@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Aggregator Prototype</title>
+  <style>
+    :root {
+      --max-width: 1000px;
+      --space-1: 8px;
+      --space-2: 12px;
+      --space-3: 16px;
+      --space-4: 24px;
+      --space-5: 32px;
+      --radius: 10px;
+      --border-color: #d0d7de;
+      --text-color: #0f172a;
+      --muted-color: #475569;
+      --page-bg: #ffffff;
+      --card-bg: #ffffff;
+      --top-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+      --expand-max: 1200px;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+        Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      color: var(--text-color);
+      background: var(--page-bg);
+    }
+
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--space-5) var(--space-4);
+    }
+
+    header h1 {
+      margin: 0 0 var(--space-2);
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 0 0 var(--space-5);
+      color: var(--muted-color);
+    }
+
+    section.category {
+      border-left: 4px solid var(--accent);
+      padding-left: var(--space-3);
+      margin-bottom: var(--space-5);
+    }
+
+    .category h2 {
+      margin: 0 0 var(--space-1);
+      font-size: 22px;
+    }
+
+    .category .meta {
+      margin: 0 0 var(--space-3);
+      color: var(--muted-color);
+      font-size: 14px;
+    }
+
+    .news-list {
+      display: grid;
+      gap: var(--space-2);
+      margin-bottom: var(--space-3);
+    }
+
+    .news-item {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: var(--space-3);
+      background: var(--card-bg);
+    }
+
+    .news-item.top {
+      border-color: var(--accent);
+      box-shadow: var(--top-shadow);
+      background: var(--top-bg);
+    }
+
+    .news-item h3 {
+      margin: 0 0 var(--space-1);
+      font-size: 16px;
+    }
+
+    .news-item p {
+      margin: 0 0 var(--space-2);
+      color: var(--muted-color);
+      font-size: 14px;
+    }
+
+    .news-item a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .news-item a:focus-visible,
+    .toggle-button:focus-visible {
+      outline: 2px solid var(--text-color);
+      outline-offset: 2px;
+    }
+
+    .expandable {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .expandable.expanded {
+      max-height: var(--expand-max);
+    }
+
+    .toggle-button {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .toggle-button:hover {
+      background: var(--top-bg);
+    }
+
+    footer {
+      color: var(--muted-color);
+      font-size: 13px;
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .category.canada {
+      --accent: #d12c2c;
+      --top-bg: rgba(209, 44, 44, 0.08);
+    }
+
+    .category.economy {
+      --accent: #1c7c3f;
+      --top-bg: rgba(28, 124, 63, 0.08);
+    }
+
+    .category.ai-tech {
+      --accent: #1f6fd1;
+      --top-bg: rgba(31, 111, 209, 0.08);
+    }
+
+    @media (max-width: 520px) {
+      .container {
+        padding: var(--space-4) var(--space-3);
+      }
+
+      header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>News Aggregator Prototype</h1>
+      <p>Last 24 hours, ranked by importance and recency.</p>
+    </header>
+    <main>
+      <section class="category canada" data-category="canada">
+        <h2>Canada News</h2>
+        <p class="meta" data-meta></p>
+        <div class="news-list" data-top-list></div>
+        <div class="expandable" id="expand-canada" data-expandable></div>
+        <button class="toggle-button" type="button" data-toggle aria-controls="expand-canada" aria-expanded="false">
+          Show more
+        </button>
+      </section>
+      <section class="category economy" data-category="economy">
+        <h2>Economic News</h2>
+        <p class="meta" data-meta></p>
+        <div class="news-list" data-top-list></div>
+        <div class="expandable" id="expand-economy" data-expandable></div>
+        <button class="toggle-button" type="button" data-toggle aria-controls="expand-economy" aria-expanded="false">
+          Show more
+        </button>
+      </section>
+      <section class="category ai-tech" data-category="aiTech">
+        <h2>AI &amp; Tech News</h2>
+        <p class="meta" data-meta></p>
+        <div class="news-list" data-top-list></div>
+        <div class="expandable" id="expand-aiTech" data-expandable></div>
+        <button class="toggle-button" type="button" data-toggle aria-controls="expand-aiTech" aria-expanded="false">
+          Show more
+        </button>
+      </section>
+    </main>
+    <footer>
+      Prototype only. All content is mocked and intended for demonstration purposes.
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const MINUTES_PER_HOUR = 60;
+      const HOURS_PER_DAY = 24;
+      const MS_PER_MINUTE = 60000;
+      const MS_PER_HOUR = MINUTES_PER_HOUR * MS_PER_MINUTE;
+      const TOP_COUNT = 3;
+
+      // Mock dataset for deterministic ranking simulation.
+      const NEWS_DATA = {
+        canada: [
+          {
+            id: "can-1",
+            title: "Prairie energy project receives accelerated federal review",
+            source: "Northern Dispatch",
+            summary: "A multi-province wind and storage proposal enters an expedited assessment track.",
+            url: "https://example.com/canada/prairie-energy-review",
+            publishedAt: toISOHoursAgo(2),
+            importanceScore: 92
+          },
+          {
+            id: "can-2",
+            title: "Toronto transit expansion secures revised funding schedule",
+            source: "Metro Ledger",
+            summary: "Updated timelines outline phased delivery for two new rail corridors.",
+            url: "https://example.com/canada/transit-expansion-funding",
+            publishedAt: toISOHoursAgo(6),
+            importanceScore: 76
+          },
+          {
+            id: "can-3",
+            title: "Atlantic fisheries announce emergency quota adjustment",
+            source: "Coastal Report",
+            summary: "Regulators balance sustainability targets with short-term fleet needs.",
+            url: "https://example.com/canada/atlantic-fisheries-quota",
+            publishedAt: toISOHoursAgo(4),
+            importanceScore: 83
+          },
+          {
+            id: "can-4",
+            title: "Northern wildfire readiness plan expands regional coordination",
+            source: "Frontier News",
+            summary: "New joint protocols emphasize air support and early detection coverage.",
+            url: "https://example.com/canada/wildfire-readiness-plan",
+            publishedAt: toISOHoursAgo(10),
+            importanceScore: 65
+          },
+          {
+            id: "can-5",
+            title: "Canadian housing council proposes rent stability pilot",
+            source: "Civic Brief",
+            summary: "Municipal leaders outline a voluntary program targeting high-pressure zones.",
+            url: "https://example.com/canada/rent-stability-pilot",
+            publishedAt: toISOHoursAgo(12),
+            importanceScore: 58
+          }
+        ],
+        economy: [
+          {
+            id: "eco-1",
+            title: "Central bank signals cautious stance ahead of quarterly report",
+            source: "Market Wire",
+            summary: "Policy notes highlight inflation progress but warn of uneven growth.",
+            url: "https://example.com/economy/central-bank-cautious-stance",
+            publishedAt: toISOHoursAgo(3),
+            importanceScore: 95
+          },
+          {
+            id: "eco-2",
+            title: "Manufacturing output edges higher after two-month dip",
+            source: "Industrial Pulse",
+            summary: "New orders recover in transport equipment and food processing segments.",
+            url: "https://example.com/economy/manufacturing-output-uptick",
+            publishedAt: toISOHoursAgo(7),
+            importanceScore: 70
+          },
+          {
+            id: "eco-3",
+            title: "Retail sales cool as household budgets tighten",
+            source: "Consumer Outlook",
+            summary: "Discretionary categories soften while essentials remain stable.",
+            url: "https://example.com/economy/retail-sales-cool",
+            publishedAt: toISOHoursAgo(5),
+            importanceScore: 82
+          },
+          {
+            id: "eco-4",
+            title: "Ports report improved cargo flow after staffing agreement",
+            source: "Logistics Herald",
+            summary: "Terminal operators cite faster turnaround times and lower backlog.",
+            url: "https://example.com/economy/ports-cargo-flow",
+            publishedAt: toISOHoursAgo(9),
+            importanceScore: 61
+          },
+          {
+            id: "eco-5",
+            title: "Small business confidence survey shows mixed outlook",
+            source: "Enterprise Journal",
+            summary: "Hiring plans soften while capital spending expectations stabilize.",
+            url: "https://example.com/economy/small-business-confidence",
+            publishedAt: toISOHoursAgo(14),
+            importanceScore: 54
+          }
+        ],
+        aiTech: [
+          {
+            id: "ai-1",
+            title: "Regional hospitals pilot AI triage assistant for intake",
+            source: "Tech Health Digest",
+            summary: "Early trials focus on reducing intake wait times and standardizing data capture.",
+            url: "https://example.com/ai-tech/ai-triage-assistant",
+            publishedAt: toISOHoursAgo(1),
+            importanceScore: 90
+          },
+          {
+            id: "ai-2",
+            title: "Cloud providers release joint guidance on model transparency",
+            source: "Compute Review",
+            summary: "The document outlines shared reporting templates for safety audits.",
+            url: "https://example.com/ai-tech/model-transparency-guidance",
+            publishedAt: toISOHoursAgo(8),
+            importanceScore: 74
+          },
+          {
+            id: "ai-3",
+            title: "University lab unveils energy-efficient accelerator design",
+            source: "Circuit Daily",
+            summary: "Prototype chips target inference workloads with lower power draw.",
+            url: "https://example.com/ai-tech/efficient-accelerator",
+            publishedAt: toISOHoursAgo(6),
+            importanceScore: 86
+          },
+          {
+            id: "ai-4",
+            title: "Open source community publishes new dataset quality checklist",
+            source: "Open ML Watch",
+            summary: "Guidelines cover bias screening, provenance, and documentation standards.",
+            url: "https://example.com/ai-tech/dataset-quality-checklist",
+            publishedAt: toISOHoursAgo(11),
+            importanceScore: 63
+          },
+          {
+            id: "ai-5",
+            title: "Edge computing alliance announces interoperability testbed",
+            source: "Systems Bulletin",
+            summary: "Vendors will validate latency targets across mixed hardware stacks.",
+            url: "https://example.com/ai-tech/edge-interoperability-testbed",
+            publishedAt: toISOHoursAgo(13),
+            importanceScore: 57
+          }
+        ]
+      };
+
+      // FUTURE DATA INGESTION
+      // Potential sources:
+      // - Reddit API
+      // - Reuters RSS
+      // - BBC RSS
+      // - CBC RSS
+      // - AP News API
+      async function fetchLiveNews() {
+        throw new Error("Not implemented: Live ingestion placeholder.");
+      }
+
+      const CATEGORY_CONFIG = {
+        canada: {
+          label: "Canada News",
+          description: "National and regional headlines across Canada."
+        },
+        economy: {
+          label: "Economic News",
+          description: "Macro indicators, markets, and policy updates."
+        },
+        aiTech: {
+          label: "AI & Tech News",
+          description: "Artificial intelligence, research, and technology shifts."
+        }
+      };
+
+      function toISOHoursAgo(hoursAgo) {
+        const now = new Date();
+        const offsetMs = hoursAgo * MS_PER_HOUR;
+        return new Date(now.getTime() - offsetMs).toISOString();
+      }
+
+      function rankNewsItems(items) {
+        const clonedItems = JSON.parse(JSON.stringify(items));
+        return clonedItems.sort(function (a, b) {
+          if (b.importanceScore !== a.importanceScore) {
+            return b.importanceScore - a.importanceScore;
+          }
+          return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+        });
+      }
+
+      function getRelativeTime(isoString) {
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) {
+          return "Unknown time";
+        }
+        const diffMs = Math.max(0, Date.now() - date.getTime());
+        const minutes = Math.floor(diffMs / MS_PER_MINUTE);
+        if (minutes < MINUTES_PER_HOUR) {
+          const label = minutes === 1 ? "minute" : "minutes";
+          return minutes + " " + label + " ago";
+        }
+        const hours = Math.floor(diffMs / MS_PER_HOUR);
+        if (hours < HOURS_PER_DAY) {
+          const label = hours === 1 ? "hour" : "hours";
+          return hours + " " + label + " ago";
+        }
+        return "1 day ago";
+      }
+
+      function createNewsItem(item, isTop) {
+        const article = document.createElement("article");
+        article.className = "news-item" + (isTop ? " top" : "");
+
+        const title = document.createElement("h3");
+        title.textContent = item.title;
+
+        const summary = document.createElement("p");
+        summary.textContent = item.summary;
+
+        const meta = document.createElement("p");
+        meta.textContent = item.source + " · " + getRelativeTime(item.publishedAt);
+
+        const link = document.createElement("a");
+        link.href = item.url;
+        link.textContent = "Read more";
+        link.target = "_blank";
+        link.rel = "noopener";
+
+        article.appendChild(title);
+        article.appendChild(summary);
+        article.appendChild(meta);
+        article.appendChild(link);
+
+        return article;
+      }
+
+      function updateToggle(button, expanded, remainingCount) {
+        button.setAttribute("aria-expanded", String(expanded));
+        button.textContent = expanded
+          ? "Hide " + remainingCount + " items"
+          : "Show " + remainingCount + " more";
+      }
+
+      function renderCategory(section) {
+        const categoryKey = section.getAttribute("data-category");
+        const config = CATEGORY_CONFIG[categoryKey];
+        const data = NEWS_DATA[categoryKey];
+        const ranked = rankNewsItems(data);
+        const topItems = ranked.slice(0, TOP_COUNT);
+        const remainingItems = ranked.slice(TOP_COUNT);
+
+        const meta = section.querySelector("[data-meta]");
+        meta.textContent = config.description + " · " + ranked.length + " items";
+
+        const topList = section.querySelector("[data-top-list]");
+        const expandable = section.querySelector("[data-expandable]");
+        const toggleButton = section.querySelector("[data-toggle]");
+
+        topItems.forEach(function (item) {
+          topList.appendChild(createNewsItem(item, true));
+        });
+
+        const remainingContainer = document.createElement("div");
+        remainingContainer.className = "news-list";
+        remainingItems.forEach(function (item) {
+          remainingContainer.appendChild(createNewsItem(item, false));
+        });
+        expandable.appendChild(remainingContainer);
+
+        updateToggle(toggleButton, false, remainingItems.length);
+        toggleButton.addEventListener("click", function () {
+          const isExpanded = expandable.classList.toggle("expanded");
+          updateToggle(toggleButton, isExpanded, remainingItems.length);
+        });
+      }
+
+      function init() {
+        const sections = document.querySelectorAll("section.category");
+        sections.forEach(renderCategory);
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
