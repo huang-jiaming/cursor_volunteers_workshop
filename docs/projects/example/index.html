@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example Project</title>
+    <link rel="stylesheet" href="../../_template/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <p><a href="../../index.html">Back to Gallery</a></p>
+
+      <h1>Daily Standup Notes with Cursor</h1>
+      <p>
+        I use Cursor to speed up converting rough bullet notes into concise, structured standup
+        updates for my team.
+      </p>
+
+      <section>
+        <h2>Before Cursor</h2>
+        <ol>
+          <li>Collect scattered notes from Slack, terminal history, and sticky notes.</li>
+          <li>Rewrite each item manually into clean standup language.</li>
+          <li>Reorder items and trim details to fit our meeting format.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>With Cursor</h2>
+        <ol>
+          <li>Paste raw notes into Cursor as context.</li>
+          <li>Prompt for a three-part standup update: done, next, blockers.</li>
+          <li>Edit only minor wording and post directly.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Prompt I Used</h2>
+        <pre><code>Turn these rough bullets into a concise standup update.
+Format as:
+1) Yesterday
+2) Today
+3) Blockers
+Keep it under 120 words and keep technical details accurate.</code></pre>
+      </section>
+
+      <section>
+        <h2>Failure/Bug and Debugging</h2>
+        <p>
+          The first outputs were too vague and dropped key technical constraints. I fixed this by
+          adding explicit instructions: "do not remove file names, ticket IDs, or error messages,"
+          and by asking Cursor to verify completeness before finalizing.
+        </p>
+      </section>
+
+      <section>
+        <h2>Measurable Improvement</h2>
+        <p>
+          Standup prep time dropped from about 18 minutes to 7 minutes per day, saving roughly 55
+          minutes each work week.
+        </p>
+      </section>
+
+      <section>
+        <h2>Next Improvement (Optional)</h2>
+        <p>
+          Automate note collection into one markdown file before prompting Cursor, so prep becomes
+          nearly one-click.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

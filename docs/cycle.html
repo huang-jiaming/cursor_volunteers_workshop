@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Workshop Gallery - Cycle Mode</title>
+    <link rel="stylesheet" href="assets/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <h1>Cycle Mode</h1>
+        <p class="subtitle">Quickly click through project pages with Previous/Next controls.</p>
+      </div>
+    </header>
+
+    <main class="container cycle-layout">
+      <section class="cycle-controls" aria-label="Cycle controls">
+        <button id="prev-btn" class="button button-secondary" type="button">Previous</button>
+        <button id="next-btn" class="button" type="button">Next</button>
+        <a class="button button-secondary" href="index.html">Back to Gallery</a>
+      </section>
+
+      <section class="cycle-status" aria-live="polite">
+        <p id="cycle-current" class="muted">Loading entries...</p>
+      </section>
+
+      <section class="cycle-frame-wrap">
+        <iframe
+          id="cycle-frame"
+          title="Project preview"
+          src="about:blank"
+          loading="lazy"
+          referrerpolicy="no-referrer"
+        ></iframe>
+      </section>
+    </main>
+
+    <script src="assets/script.js"></script>
+  </body>
+</html>

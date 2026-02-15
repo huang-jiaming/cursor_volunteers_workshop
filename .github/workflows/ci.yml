@@ -1,0 +1,115 @@
+name: Validate Workshop Gallery
+
+on:
+  push:
+    branches:
+      - main
+      - "*"
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required files and manifest entries
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import re
+          import sys
+
+          root = pathlib.Path(".")
+
+          required_files = [
+              root / "docs/index.html",
+              root / "docs/cycle.html",
+              root / "docs/assets/style.css",
+              root / "docs/assets/script.js",
+              root / "docs/_template/index.html",
+              root / "docs/_template/style.css",
+              root / "docs/projects/manifest.json",
+              root / "submissions/README.md",
+              root / "README.md",
+          ]
+
+          missing = [str(p) for p in required_files if not p.exists()]
+          if missing:
+              print("Missing required files:")
+              for m in missing:
+                  print(f" - {m}")
+              sys.exit(1)
+
+          # Optional-but-enforced: make sure core pages are non-empty.
+          for p in [root / "docs/index.html", root / "docs/cycle.html"]:
+              if p.stat().st_size == 0:
+                  print(f"File is empty: {p}")
+                  sys.exit(1)
+
+          manifest_path = root / "docs/projects/manifest.json"
+          try:
+              manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+          except json.JSONDecodeError as exc:
+              print(f"Invalid JSON in {manifest_path}: {exc}")
+              sys.exit(1)
+
+          if not isinstance(manifest_data, list):
+              print("manifest.json must contain a top-level array.")
+              sys.exit(1)
+
+          name_re = re.compile(r"^[a-z0-9-]+$")
+          seen_names = set()
+
+          for i, entry in enumerate(manifest_data):
+              location = f"manifest entry #{i}"
+              if not isinstance(entry, dict):
+                  print(f"{location} must be an object.")
+                  sys.exit(1)
+
+              for key in ("name", "title", "path"):
+                  if key not in entry:
+                      print(f"{location} is missing required key: '{key}'.")
+                      sys.exit(1)
+
+              name = entry["name"]
+              title = entry["title"]
+              path = entry["path"]
+
+              if not isinstance(name, str) or not name_re.fullmatch(name):
+                  print(
+                      f"{location} has invalid name '{name}'. "
+                      "Expected regex: ^[a-z0-9-]+$"
+                  )
+                  sys.exit(1)
+
+              if name in seen_names:
+                  print(f"Duplicate manifest name found: '{name}'")
+                  sys.exit(1)
+              seen_names.add(name)
+
+              if not isinstance(title, str) or not title.strip():
+                  print(f"{location} has invalid title.")
+                  sys.exit(1)
+
+              expected_path = f"projects/{name}/"
+              if path != expected_path:
+                  print(
+                      f"{location} has invalid path '{path}'. "
+                      f"Expected exactly '{expected_path}'."
+                  )
+                  sys.exit(1)
+
+              project_index = root / "docs" / path / "index.html"
+              if not project_index.exists():
+                  print(f"Missing project page: {project_index}")
+                  sys.exit(1)
+
+              if project_index.stat().st_size == 0:
+                  print(f"Project page is empty: {project_index}")
+                  sys.exit(1)
+
+          print("All checks passed.")
+          PY
