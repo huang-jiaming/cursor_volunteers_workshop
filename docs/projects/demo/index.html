@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart To-Do List Demo</title>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --panel: #ffffff;
+      --border: #d9d9d9;
+      --text: #1f1f1f;
+      --muted: #666666;
+      --high: #a30000;
+      --medium: #8a5a00;
+      --low: #0f5f1f;
+      --warn-bg: #fff5e6;
+      --warn-border: #e0a100;
+      --ok-bg: #e8f7e8;
+      --ok-border: #2d7a2d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 22px;
+    }
+
+    h2 {
+      font-size: 18px;
+    }
+
+    h3 {
+      font-size: 15px;
+    }
+
+    .app {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+
+    input, select, button {
+      width: 100%;
+      border: 1px solid var(--border);
+      padding: 8px;
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #f0f0f0;
+    }
+
+    .actions-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .task-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    .task-table th,
+    .task-table td {
+      border: 1px solid var(--border);
+      padding: 6px;
+      vertical-align: top;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .task-table th {
+      background: #f0f0f0;
+    }
+
+    .priority-high { color: var(--high); font-weight: 700; }
+    .priority-medium { color: var(--medium); font-weight: 700; }
+    .priority-low { color: var(--low); font-weight: 700; }
+    .complete {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tag {
+      display: inline-block;
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      margin-right: 4px;
+      margin-top: 3px;
+      font-size: 12px;
+      background: #fafafa;
+    }
+
+    .banner {
+      border: 1px solid var(--ok-border);
+      background: var(--ok-bg);
+      padding: 8px;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    .warning {
+      border: 1px solid var(--warn-border);
+      background: var(--warn-bg);
+      padding: 8px;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+
+    .suggestion {
+      border: 1px dashed var(--warn-border);
+      padding: 6px;
+      margin-top: 6px;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .day-row {
+      border: 1px solid var(--border);
+      padding: 6px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .test-pass { color: #0a6e0a; }
+    .test-fail { color: #a30000; }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .form-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="panel">
+      <h1>Smart To-Do List Demo</h1>
+      <div class="small">Single-file local app. Tasks are saved to localStorage.</div>
+      <div class="actions-row">
+        <button id="resetDemoBtn" class="secondary">Reset to Demo Data</button>
+        <button id="clearStorageBtn" class="secondary">Clear App Storage</button>
+      </div>
+      <div id="todayRecapInline" class="banner"></div>
+    </section>
+
+    <section class="panel">
+      <h2 id="taskFormTitle">Add Task</h2>
+      <form id="taskForm">
+        <input type="hidden" id="taskId">
+        <div class="form-grid">
+          <div>
+            <label for="taskTitle">Task</label>
+            <input id="taskTitle" type="text" required>
+          </div>
+          <div>
+            <label for="taskDueDate">End date</label>
+            <input id="taskDueDate" type="date" required>
+          </div>
+          <div>
+            <label for="taskEstimateHours">Estimated hours (optional)</label>
+            <input id="taskEstimateHours" type="number" min="0" step="0.25" placeholder="e.g. 1.5">
+          </div>
+          <div>
+            <label for="taskEstimateMinutes">Estimated minutes (optional)</label>
+            <input id="taskEstimateMinutes" type="number" min="0" step="5" placeholder="e.g. 30">
+          </div>
+          <div>
+            <label for="taskPriority">Priority</label>
+            <select id="taskPriority">
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button type="submit" id="taskSubmitBtn">Add Task</button>
+          <button type="button" id="cancelEditBtn" class="secondary">Cancel Edit</button>
+        </div>
+      </form>
+      <div class="small">Estimates can use hours, minutes, or both. Combined value is used for workload calculations.</div>
+    </section>
+
+    <div class="layout">
+      <section class="panel">
+        <h2>Tasks</h2>
+        <div class="small">Sort order: incomplete first, then due date, then priority.</div>
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th>Done</th>
+              <th>Task</th>
+              <th>End date</th>
+              <th>Estimate</th>
+              <th>Priority</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="taskTableBody"></tbody>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2>Workload Settings</h2>
+        <div class="grid-two">
+          <div>
+            <label for="defaultDailyHours">Default daily allowance (hours)</label>
+            <input id="defaultDailyHours" type="number" min="0" step="0.25">
+          </div>
+          <div>
+            <button id="saveDefaultAllowanceBtn">Save Default Allowance</button>
+          </div>
+        </div>
+        <hr>
+        <h3>Day-specific allowance</h3>
+        <div class="grid-two">
+          <div>
+            <label for="singleOverrideDate">Date</label>
+            <input id="singleOverrideDate" type="date">
+          </div>
+          <div>
+            <label for="singleOverrideHours">Allowance hours</label>
+            <input id="singleOverrideHours" type="number" min="0" step="0.25">
+          </div>
+        </div>
+        <button id="saveSingleOverrideBtn">Save Day Allowance</button>
+        <div id="allowanceSummary" class="small" style="margin-top:8px;"></div>
+        <div id="allowanceOverrides"></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Capacity Forecast and Smart Suggestions</h2>
+      <div class="small">Loads are calculated from incomplete tasks, grouped by end-date.</div>
+      <div id="capacityView"></div>
+      <div id="suggestionsView"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Unit Tests</h2>
+      <div class="small">Tests run in-app with no external libraries.</div>
+      <div class="actions-row">
+        <button id="runTestsBtn">Run Tests</button>
+        <div></div>
+      </div>
+      <div id="testResults"></div>
+    </section>
+  </div>
+
+  <script>
+    /* TEST_EXPORT_START */
+    var SmartTodoLogic = (function () {
+      "use strict";
+
+      var PRIORITY_SCORE = { High: 3, Medium: 2, Low: 1 };
+
+      function toIsoDate(date) {
+        var y = date.getFullYear();
+        var m = String(date.getMonth() + 1).padStart(2, "0");
+        var day = String(date.getDate()).padStart(2, "0");
+        return y + "-" + m + "-" + day;
+      }
+
+      function todayIso() {
+        return toIsoDate(new Date());
+      }
+
+      function fromIsoDate(iso) {
+        return new Date(iso + "T00:00:00");
+      }
+
+      function addDays(isoDate, delta) {
+        var d = fromIsoDate(isoDate);
+        d.setDate(d.getDate() + delta);
+        return toIsoDate(d);
+      }
+
+      function minutesFromEstimate(hours, minutes) {
+        var h = Number(hours || 0);
+        var m = Number(minutes || 0);
+        if (h < 0 || m < 0 || Number.isNaN(h) || Number.isNaN(m)) {
+          return 0;
+        }
+        return Math.round(h * 60 + m);
+      }
+
+      function formatMinutes(totalMinutes) {
+        var minutes = Math.max(0, Math.round(Number(totalMinutes || 0)));
+        var h = Math.floor(minutes / 60);
+        var m = minutes % 60;
+        if (h === 0) return m + "m";
+        if (m === 0) return h + "h";
+        return h + "h " + m + "m";
+      }
+
+      function getAllowanceForDate(settings, isoDate) {
+        if (settings.singleOverrides[isoDate] != null) {
+          return Number(settings.singleOverrides[isoDate]);
+        }
+        return Number(settings.defaultDailyHours);
+      }
+
+      function groupTaskLoadByDueDate(tasks) {
+        var map = {};
+        tasks.forEach(function (task) {
+          if (task.completed) return;
+          if (!map[task.dueDate]) map[task.dueDate] = [];
+          map[task.dueDate].push(task);
+        });
+        return map;
+      }
+
+      function calculateCapacityRows(tasks, settings) {
+        var grouped = groupTaskLoadByDueDate(tasks);
+        var dueDates = Object.keys(grouped).sort();
+        return dueDates.map(function (date) {
+          var totalMinutes = grouped[date].reduce(function (sum, task) {
+            return sum + Number(task.estimateMinutesTotal || 0);
+          }, 0);
+          var allowanceHours = getAllowanceForDate(settings, date);
+          var allowanceMinutes = Math.round(allowanceHours * 60);
+          return {
+            date: date,
+            totalMinutes: totalMinutes,
+            allowanceMinutes: allowanceMinutes,
+            overloadMinutes: Math.max(0, totalMinutes - allowanceMinutes),
+            tasks: grouped[date].slice()
+          };
+        });
+      }
+
+      function findNextDateWithCapacity(startDate, taskMinutes, loads, settings, maxDaysAhead) {
+        for (var i = 1; i <= maxDaysAhead; i += 1) {
+          var candidate = addDays(startDate, i);
+          var allowance = Math.round(getAllowanceForDate(settings, candidate) * 60);
+          var currentLoad = Number(loads[candidate] || 0);
+          if (currentLoad + taskMinutes <= allowance) {
+            return candidate;
+          }
+        }
+        return null;
+      }
+
+      function suggestMoves(tasks, settings) {
+        var byDate = groupTaskLoadByDueDate(tasks);
+        var dates = Object.keys(byDate).sort();
+        var suggestions = [];
+        var mutableLoads = {};
+        dates.forEach(function (d) {
+          mutableLoads[d] = byDate[d].reduce(function (sum, t) {
+            return sum + Number(t.estimateMinutesTotal || 0);
+          }, 0);
+        });
+
+        dates.forEach(function (date) {
+          var allowanceMinutes = Math.round(getAllowanceForDate(settings, date) * 60);
+          if (mutableLoads[date] <= allowanceMinutes) return;
+
+          var candidates = byDate[date].slice().sort(function (a, b) {
+            var pa = PRIORITY_SCORE[a.priority];
+            var pb = PRIORITY_SCORE[b.priority];
+            if (pa !== pb) return pa - pb;
+            return (b.estimateMinutesTotal || 0) - (a.estimateMinutesTotal || 0);
+          });
+
+          for (var i = 0; i < candidates.length; i += 1) {
+            if (mutableLoads[date] <= allowanceMinutes) break;
+            var task = candidates[i];
+            var target = findNextDateWithCapacity(date, task.estimateMinutesTotal, mutableLoads, settings, 21);
+            if (!target) continue;
+
+            mutableLoads[date] -= task.estimateMinutesTotal;
+            mutableLoads[target] = (mutableLoads[target] || 0) + task.estimateMinutesTotal;
+
+            var warning = "";
+            if (target > task.dueDate) {
+              warning = "Warning: target day is after task end-date.";
+            }
+
+            suggestions.push({
+              taskId: task.id,
+              taskTitle: task.title,
+              fromDate: date,
+              toDate: target,
+              estimateMinutes: task.estimateMinutesTotal,
+              warning: warning
+            });
+          }
+        });
+
+        return suggestions;
+      }
+
+      function getTopTodayTasks(tasks) {
+        var today = todayIso();
+        return tasks
+          .filter(function (t) { return !t.completed && t.dueDate === today; })
+          .sort(function (a, b) {
+            if (PRIORITY_SCORE[a.priority] !== PRIORITY_SCORE[b.priority]) {
+              return PRIORITY_SCORE[b.priority] - PRIORITY_SCORE[a.priority];
+            }
+            return (b.estimateMinutesTotal || 0) - (a.estimateMinutesTotal || 0);
+          });
+      }
+
+      function buildDemoData() {
+        var today = todayIso();
+        return {
+          tasks: [
+            {
+              id: "task_demo_1",
+              title: "Prepare volunteer workshop slides",
+              dueDate: today,
+              estimateMinutesTotal: 150,
+              priority: "High",
+              completed: false
+            },
+            {
+              id: "task_demo_2",
+              title: "Review pull requests",
+              dueDate: today,
+              estimateMinutesTotal: 75,
+              priority: "Medium",
+              completed: false
+            },
+            {
+              id: "task_demo_3",
+              title: "Write recap notes",
+              dueDate: today,
+              estimateMinutesTotal: 40,
+              priority: "Low",
+              completed: false
+            },
+            {
+              id: "task_demo_4",
+              title: "Draft roadmap update",
+              dueDate: addDays(today, 1),
+              estimateMinutesTotal: 120,
+              priority: "High",
+              completed: false
+            },
+            {
+              id: "task_demo_5",
+              title: "Inbox clean-up",
+              dueDate: addDays(today, 1),
+              estimateMinutesTotal: 60,
+              priority: "Low",
+              completed: true
+            },
+            {
+              id: "task_demo_6",
+              title: "Practice demo run",
+              dueDate: addDays(today, 2),
+              estimateMinutesTotal: 95,
+              priority: "Medium",
+              completed: false
+            }
+          ],
+          settings: {
+            defaultDailyHours: 3,
+            singleOverrides: (function () {
+              var overrides = {};
+              overrides[today] = 2;
+              overrides[addDays(today, 2)] = 1.5;
+              return overrides;
+            })()
+          }
+        };
+      }
+
+      function createTestState(tasks, settings) {
+        return {
+          tasks: tasks || [],
+          settings: settings || { defaultDailyHours: 2, singleOverrides: {} }
+        };
+      }
+
+      function runUnitTests() {
+        var tests = [];
+
+        function add(name, fn) {
+          tests.push({ name: name, fn: fn });
+        }
+
+        function expect(condition, message) {
+          if (!condition) {
+            throw new Error(message);
+          }
+        }
+
+        add("minutesFromEstimate combines hours and minutes", function () {
+          expect(minutesFromEstimate(1.5, 30) === 120, "Expected 120 minutes");
+        });
+
+        add("single-day override wins over default allowance", function () {
+          var settings = { defaultDailyHours: 3, singleOverrides: { "2026-02-16": 1 } };
+          expect(getAllowanceForDate(settings, "2026-02-16") === 1, "Single override should win");
+        });
+
+        add("capacity calculation reports overload correctly", function () {
+          var state = createTestState(
+            [{ id: "a", title: "A", dueDate: "2026-02-18", estimateMinutesTotal: 180, priority: "High", completed: false }],
+            { defaultDailyHours: 2, singleOverrides: {} }
+          );
+          var rows = calculateCapacityRows(state.tasks, state.settings);
+          expect(rows[0].overloadMinutes === 60, "Expected overload of 60 minutes");
+        });
+
+        add("suggestMoves proposes lowest-priority task first", function () {
+          var tasks = [
+            { id: "h", title: "High", dueDate: "2026-02-19", estimateMinutesTotal: 90, priority: "High", completed: false },
+            { id: "l", title: "Low", dueDate: "2026-02-19", estimateMinutesTotal: 90, priority: "Low", completed: false }
+          ];
+          var settings = { defaultDailyHours: 2, singleOverrides: { "2026-02-20": 4 } };
+          var suggestions = suggestMoves(tasks, settings);
+          expect(Boolean(suggestions.length), "Expected at least one suggestion");
+          expect(suggestions[0].taskId === "l", "Low priority task should be suggested first");
+        });
+
+        add("top today tasks only include incomplete tasks due today", function () {
+          var today = todayIso();
+          var tasks = [
+            { id: "1", title: "One", dueDate: today, estimateMinutesTotal: 30, priority: "Low", completed: false },
+            { id: "2", title: "Two", dueDate: addDays(today, 1), estimateMinutesTotal: 30, priority: "High", completed: false },
+            { id: "3", title: "Three", dueDate: today, estimateMinutesTotal: 30, priority: "High", completed: true }
+          ];
+          var out = getTopTodayTasks(tasks);
+          expect(out.length === 1 && out[0].id === "1", "Only one matching task expected");
+        });
+
+        add("suggestMoves warns when target date is after end-date", function () {
+          var tasks = [
+            { id: "x", title: "Task", dueDate: "2026-02-20", estimateMinutesTotal: 180, priority: "Low", completed: false }
+          ];
+          var settings = {
+            defaultDailyHours: 2,
+            singleOverrides: { "2026-02-21": 4 }
+          };
+          var suggestions = suggestMoves(tasks, settings);
+          expect(Boolean(suggestions.length), "Expected a suggestion");
+          expect(suggestions[0].warning.indexOf("after task end-date") >= 0, "Expected warning");
+        });
+
+        var started = Date.now();
+        var failures = [];
+        tests.forEach(function (test) {
+          try {
+            test.fn();
+          } catch (err) {
+            failures.push({ name: test.name, error: err.message });
+          }
+        });
+        var elapsed = Date.now() - started;
+        var passed = tests.length - failures.length;
+
+        return {
+          total: tests.length,
+          passed: passed,
+          failed: failures.length,
+          failures: failures,
+          elapsedMs: elapsed,
+          summaryText: "Executed " + tests.length + " tests in " + elapsed + "ms. " +
+            passed + " passed, " + failures.length + " failed."
+        };
+      }
+
+      return {
+        PRIORITY_SCORE: PRIORITY_SCORE,
+        toIsoDate: toIsoDate,
+        todayIso: todayIso,
+        fromIsoDate: fromIsoDate,
+        addDays: addDays,
+        minutesFromEstimate: minutesFromEstimate,
+        formatMinutes: formatMinutes,
+        getAllowanceForDate: getAllowanceForDate,
+        calculateCapacityRows: calculateCapacityRows,
+        suggestMoves: suggestMoves,
+        getTopTodayTasks: getTopTodayTasks,
+        buildDemoData: buildDemoData,
+        runUnitTests: runUnitTests
+      };
+    })();
+    /* TEST_EXPORT_END */
+
+    (function () {
+      "use strict";
+
+      var STORAGE_KEY = "demo_smart_todo_v1";
+
+      function makeId() {
+        return "task_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+      }
+
+      function escapeHtml(raw) {
+        return String(raw)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function safeParseState(raw) {
+        try {
+          var parsed = JSON.parse(raw);
+          if (!parsed || !Array.isArray(parsed.tasks) || !parsed.settings) {
+            return null;
+          }
+          return parsed;
+        } catch (err) {
+          return null;
+        }
+      }
+
+      function loadState() {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          var demo = SmartTodoLogic.buildDemoData();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
+          return demo;
+        }
+        var parsed = safeParseState(raw);
+        if (!parsed) {
+          var fresh = SmartTodoLogic.buildDemoData();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
+          return fresh;
+        }
+        return parsed;
+      }
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      }
+
+      function byId(taskId) {
+        return appState.tasks.find(function (t) { return t.id === taskId; }) || null;
+      }
+
+      function sortTasksForView(tasks) {
+        return tasks.slice().sort(function (a, b) {
+          if (a.completed !== b.completed) return a.completed ? 1 : -1;
+          if (a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+          if (SmartTodoLogic.PRIORITY_SCORE[a.priority] !== SmartTodoLogic.PRIORITY_SCORE[b.priority]) {
+            return SmartTodoLogic.PRIORITY_SCORE[b.priority] - SmartTodoLogic.PRIORITY_SCORE[a.priority];
+          }
+          return a.title.localeCompare(b.title);
+        });
+      }
+
+      var appState = loadState();
+
+      var taskForm = document.getElementById("taskForm");
+      var taskIdInput = document.getElementById("taskId");
+      var taskTitleInput = document.getElementById("taskTitle");
+      var taskDueDateInput = document.getElementById("taskDueDate");
+      var taskEstimateHoursInput = document.getElementById("taskEstimateHours");
+      var taskEstimateMinutesInput = document.getElementById("taskEstimateMinutes");
+      var taskPriorityInput = document.getElementById("taskPriority");
+      var taskTableBody = document.getElementById("taskTableBody");
+      var taskFormTitle = document.getElementById("taskFormTitle");
+      var taskSubmitBtn = document.getElementById("taskSubmitBtn");
+      var cancelEditBtn = document.getElementById("cancelEditBtn");
+      var defaultDailyHoursInput = document.getElementById("defaultDailyHours");
+      var saveDefaultAllowanceBtn = document.getElementById("saveDefaultAllowanceBtn");
+      var singleOverrideDateInput = document.getElementById("singleOverrideDate");
+      var singleOverrideHoursInput = document.getElementById("singleOverrideHours");
+      var saveSingleOverrideBtn = document.getElementById("saveSingleOverrideBtn");
+      var allowanceSummary = document.getElementById("allowanceSummary");
+      var allowanceOverrides = document.getElementById("allowanceOverrides");
+      var capacityView = document.getElementById("capacityView");
+      var suggestionsView = document.getElementById("suggestionsView");
+      var todayRecapInline = document.getElementById("todayRecapInline");
+      var resetDemoBtn = document.getElementById("resetDemoBtn");
+      var clearStorageBtn = document.getElementById("clearStorageBtn");
+      var runTestsBtn = document.getElementById("runTestsBtn");
+      var testResults = document.getElementById("testResults");
+
+      function resetForm() {
+        taskIdInput.value = "";
+        taskForm.reset();
+        taskPriorityInput.value = "High";
+        taskFormTitle.textContent = "Add Task";
+        taskSubmitBtn.textContent = "Add Task";
+      }
+
+      function setEditingTask(task) {
+        taskIdInput.value = task.id;
+        taskTitleInput.value = task.title;
+        taskDueDateInput.value = task.dueDate;
+        var hours = Math.floor(task.estimateMinutesTotal / 60);
+        var minutes = task.estimateMinutesTotal % 60;
+        taskEstimateHoursInput.value = hours ? String(hours) : "";
+        taskEstimateMinutesInput.value = minutes ? String(minutes) : "";
+        taskPriorityInput.value = task.priority;
+        taskFormTitle.textContent = "Edit Task";
+        taskSubmitBtn.textContent = "Save Task";
+      }
+
+      function renderTasks() {
+        var rows = sortTasksForView(appState.tasks).map(function (task) {
+          var priorityClass = "priority-" + task.priority.toLowerCase();
+          return (
+            "<tr>" +
+              "<td><input type='checkbox' data-action='toggle' data-id='" + escapeHtml(task.id) + "' " + (task.completed ? "checked" : "") + "></td>" +
+              "<td class='" + (task.completed ? "complete" : "") + "'>" + escapeHtml(task.title) + "</td>" +
+              "<td>" + escapeHtml(task.dueDate) + "</td>" +
+              "<td>" + escapeHtml(SmartTodoLogic.formatMinutes(task.estimateMinutesTotal)) + "</td>" +
+              "<td class='" + priorityClass + "'>" + escapeHtml(task.priority) + "</td>" +
+              "<td>" +
+                "<button data-action='edit' data-id='" + escapeHtml(task.id) + "'>Edit</button>" +
+                "<button data-action='delete' data-id='" + escapeHtml(task.id) + "' class='secondary' style='margin-top:4px;'>Delete</button>" +
+              "</td>" +
+            "</tr>"
+          );
+        }).join("");
+        taskTableBody.innerHTML = rows || "<tr><td colspan='6' class='small'>No tasks yet.</td></tr>";
+      }
+
+      function renderAllowanceSummary() {
+        var overrideDates = Object.keys(appState.settings.singleOverrides).sort();
+        allowanceSummary.innerHTML =
+          "Default: <b>" + appState.settings.defaultDailyHours + "h/day</b> | Day overrides: " + overrideDates.length;
+
+        if (!overrideDates.length) {
+          allowanceOverrides.innerHTML = "<div class='small'>No day-specific overrides set.</div>";
+          return;
+        }
+
+        allowanceOverrides.innerHTML = overrideDates.map(function (date) {
+          var hours = appState.settings.singleOverrides[date];
+          return (
+            "<div class='day-row'>" +
+              "<b>" + escapeHtml(date) + "</b>: " + escapeHtml(hours) + "h " +
+              "<button data-action='remove-override' data-date='" + escapeHtml(date) + "' class='secondary' style='width:auto;margin-left:8px;'>Remove</button>" +
+            "</div>"
+          );
+        }).join("");
+      }
+
+      function renderCapacityAndSuggestions() {
+        var rows = SmartTodoLogic.calculateCapacityRows(appState.tasks, appState.settings);
+        if (!rows.length) {
+          capacityView.innerHTML = "<div class='small'>No incomplete tasks available for capacity planning.</div>";
+          suggestionsView.innerHTML = "";
+          return;
+        }
+
+        capacityView.innerHTML = rows.map(function (row) {
+          var statusHtml = row.overloadMinutes > 0
+            ? "<div class='warning'>Overloaded by " + SmartTodoLogic.formatMinutes(row.overloadMinutes) + " (load " +
+              SmartTodoLogic.formatMinutes(row.totalMinutes) + " vs allowance " +
+              SmartTodoLogic.formatMinutes(row.allowanceMinutes) + ").</div>"
+            : "<div class='banner'>Within capacity (load " +
+              SmartTodoLogic.formatMinutes(row.totalMinutes) + " / allowance " +
+              SmartTodoLogic.formatMinutes(row.allowanceMinutes) + ").</div>";
+          return (
+            "<div class='day-row'>" +
+              "<b>" + row.date + "</b> " +
+              "<div class='small'>Tasks due: " + row.tasks.length + "</div>" +
+              statusHtml +
+            "</div>"
+          );
+        }).join("");
+
+        var suggested = SmartTodoLogic.suggestMoves(appState.tasks, appState.settings);
+        if (!suggested.length) {
+          suggestionsView.innerHTML = "<div class='banner'>No moves suggested. All days are within allowance or cannot be improved in the next 21 days.</div>";
+          return;
+        }
+        suggestionsView.innerHTML = "<h3>Suggested task moves (lowest priority first)</h3>" + suggested.map(function (s) {
+          var warning = s.warning ? "<div class='warning'>" + escapeHtml(s.warning) + "</div>" : "";
+          return (
+            "<div class='suggestion'>" +
+              "<b>" + escapeHtml(s.taskTitle) + "</b>: move from <b>" + s.fromDate + "</b> to <b>" + s.toDate + "</b> (" +
+              SmartTodoLogic.formatMinutes(s.estimateMinutes) + ")." +
+              warning +
+            "</div>"
+          );
+        }).join("");
+      }
+
+      function renderTodayRecap() {
+        var todayTasks = SmartTodoLogic.getTopTodayTasks(appState.tasks);
+        if (!todayTasks.length) {
+          todayRecapInline.innerHTML = "<b>Today recap:</b> no incomplete tasks due today.";
+          return;
+        }
+        todayRecapInline.innerHTML = "<b>Today recap:</b> " + todayTasks.length +
+          " due today. Top priorities: " +
+          todayTasks.slice(0, 3).map(function (t) {
+            return "<span class='tag'>" + escapeHtml(t.priority) + " - " +
+              escapeHtml(t.title) + " (" +
+              SmartTodoLogic.formatMinutes(t.estimateMinutesTotal) + ")</span>";
+          }).join("");
+      }
+
+      function renderAll() {
+        defaultDailyHoursInput.value = appState.settings.defaultDailyHours;
+        renderTasks();
+        renderAllowanceSummary();
+        renderCapacityAndSuggestions();
+        renderTodayRecap();
+      }
+
+      function renderTestResults(result) {
+        testResults.innerHTML = [
+          "<div class='small'>Executed " + result.total + " tests in " + result.elapsedMs + "ms.</div>",
+          "<div class='" + (result.failed ? "test-fail" : "test-pass") + "'>" +
+            result.passed + " passed, " + result.failed + " failed.</div>",
+          result.failures.map(function (f) {
+            return "<div class='test-fail'>FAIL: " + escapeHtml(f.name) + " - " + escapeHtml(f.error) + "</div>";
+          }).join("")
+        ].join("");
+      }
+
+      taskForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        var title = taskTitleInput.value.trim();
+        var dueDate = taskDueDateInput.value;
+        var estimate = SmartTodoLogic.minutesFromEstimate(taskEstimateHoursInput.value, taskEstimateMinutesInput.value);
+        var priority = taskPriorityInput.value;
+
+        if (!title || !dueDate) {
+          alert("Task and end-date are required.");
+          return;
+        }
+
+        var editingId = taskIdInput.value;
+        if (editingId) {
+          var existing = byId(editingId);
+          if (!existing) {
+            alert("Task not found.");
+            return;
+          }
+          existing.title = title;
+          existing.dueDate = dueDate;
+          existing.estimateMinutesTotal = estimate;
+          existing.priority = priority;
+        } else {
+          appState.tasks.push({
+            id: makeId(),
+            title: title,
+            dueDate: dueDate,
+            estimateMinutesTotal: estimate,
+            priority: priority,
+            completed: false
+          });
+        }
+        saveState();
+        resetForm();
+        renderAll();
+      });
+
+      cancelEditBtn.addEventListener("click", function () {
+        resetForm();
+      });
+
+      taskTableBody.addEventListener("click", function (event) {
+        var target = event.target;
+        if (!target || !target.dataset) return;
+        var action = target.dataset.action;
+        var id = target.dataset.id;
+        if (!action || !id) return;
+        var task = byId(id);
+        if (!task) return;
+
+        if (action === "edit") {
+          setEditingTask(task);
+          return;
+        }
+        if (action === "delete") {
+          appState.tasks = appState.tasks.filter(function (t) { return t.id !== id; });
+          saveState();
+          renderAll();
+        }
+      });
+
+      taskTableBody.addEventListener("change", function (event) {
+        var target = event.target;
+        if (!target || !target.dataset) return;
+        if (target.dataset.action !== "toggle") return;
+        var task = byId(target.dataset.id);
+        if (!task) return;
+        task.completed = Boolean(target.checked);
+        saveState();
+        renderAll();
+      });
+
+      saveDefaultAllowanceBtn.addEventListener("click", function () {
+        var value = Number(defaultDailyHoursInput.value);
+        if (Number.isNaN(value) || value < 0) {
+          alert("Please enter a valid non-negative number.");
+          return;
+        }
+        appState.settings.defaultDailyHours = value;
+        saveState();
+        renderAll();
+      });
+
+      saveSingleOverrideBtn.addEventListener("click", function () {
+        var date = singleOverrideDateInput.value;
+        var value = Number(singleOverrideHoursInput.value);
+        if (!date || Number.isNaN(value) || value < 0) {
+          alert("Please provide a date and a non-negative number.");
+          return;
+        }
+        appState.settings.singleOverrides[date] = value;
+        saveState();
+        renderAll();
+      });
+
+      allowanceOverrides.addEventListener("click", function (event) {
+        var target = event.target;
+        if (!target || !target.dataset) return;
+        if (target.dataset.action !== "remove-override") return;
+        var date = target.dataset.date;
+        if (!date) return;
+        delete appState.settings.singleOverrides[date];
+        saveState();
+        renderAll();
+      });
+
+      resetDemoBtn.addEventListener("click", function () {
+        appState = SmartTodoLogic.buildDemoData();
+        saveState();
+        resetForm();
+        renderAll();
+      });
+
+      clearStorageBtn.addEventListener("click", function () {
+        localStorage.removeItem(STORAGE_KEY);
+        appState = SmartTodoLogic.buildDemoData();
+        saveState();
+        resetForm();
+        renderAll();
+      });
+
+      runTestsBtn.addEventListener("click", function () {
+        var result = SmartTodoLogic.runUnitTests();
+        renderTestResults(result);
+      });
+
+      resetForm();
+      renderAll();
+      renderTestResults(SmartTodoLogic.runUnitTests());
+    })();
+  </script>
+</body>
+</html>

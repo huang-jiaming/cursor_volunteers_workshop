@@ -8,5 +8,10 @@
     "name": "jia",
     "title": "To-Do list demo",
     "path": "projects/jia/"
+  },
+  {
+    "name": "demo",
+    "title": "Smart To-Do List Demo",
+    "path": "projects/demo/"
   }
 ]
