@@ -1,5 +1,5 @@
 # Workshop Gallery (GitHub Pages via `/docs`)
-
+sdsda
 This repository hosts a static gallery of student submissions for the workshop prompt:
 
 > **How will I use Cursor to improve the efficiency of one of my daily workflows?**
