@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goal to Action Plan</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #cbd5e1;
+      --primary: #1e293b;
+      --primary-hover: #334155;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+      padding: 20px 16px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 30px 16px 40px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      padding: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input,
+    select,
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      background: #fff;
+    }
+
+    input:focus-visible,
+    select:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .grid-2 {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 14px;
+    }
+
+    .primary-btn {
+      margin-top: 18px;
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .primary-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .plan {
+      margin-top: 24px;
+    }
+
+    .plan-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .plan-head h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .secondary-btn {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .secondary-btn:hover {
+      background: #f8fafc;
+    }
+
+    ol {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 12px;
+    }
+
+    .check {
+      margin-top: 1px;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 2px solid #64748b;
+      color: #64748b;
+      background: #fff;
+      cursor: pointer;
+      flex: 0 0 auto;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .check.completed {
+      border-color: var(--success);
+      background: var(--success);
+      color: #fff;
+    }
+
+    .step-title {
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .step-title.completed {
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+
+    .step-desc {
+      margin: 4px 0 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Goal -> Action Plan</h1>
+      <p>Enter a goal and get a step-by-step plan. No API keys required.</p>
+    </header>
+    <main>
+      <form id="planForm" class="card">
+        <label for="goalInput">Goal</label>
+        <input id="goalInput" type="text" placeholder="e.g. Learn Spanish in 6 months" required>
+
+        <div class="grid-2">
+          <div>
+            <label for="categorySelect">Category (optional)</label>
+            <select id="categorySelect"></select>
+          </div>
+          <div>
+            <label for="timeframeInput">Timeframe (optional)</label>
+            <input id="timeframeInput" type="text" placeholder="e.g. 3 months">
+          </div>
+        </div>
+
+        <button class="primary-btn" type="submit">Generate plan</button>
+      </form>
+
+      <section id="planSection" class="card plan" hidden>
+        <div class="plan-head">
+          <h2>Your plan <span id="planCategory" class="muted"></span></h2>
+          <div class="actions">
+            <button id="copyBtn" type="button" class="secondary-btn">Copy plan</button>
+            <button id="exportBtn" type="button" class="secondary-btn">Export markdown</button>
+          </div>
+        </div>
+        <ol id="stepsList"></ol>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var CATEGORIES = [
+        { id: "learning", label: "Learning", keywords: ["learn", "study", "master", "understand", "course", "read", "practice", "skill"] },
+        { id: "fitness", label: "Fitness", keywords: ["run", "exercise", "workout", "gym", "weight", "marathon", "yoga", "fitness", "health"] },
+        { id: "project", label: "Project", keywords: ["build", "launch", "create", "project", "ship", "release", "develop", "start"] },
+        { id: "habit", label: "Habit", keywords: ["habit", "daily", "routine", "consistent", "every day", "stick to"] },
+        { id: "general", label: "General", keywords: [] }
+      ];
+
+      var STEP_TEMPLATES = {
+        learning: [
+          { title: "Define scope for {{goal}}", description: "Be specific: what exactly do you want to achieve and by when?" },
+          { title: "Gather resources", description: "Books, courses, tools, or people that can help." },
+          { title: "Schedule weekly practice", description: "Block time in your calendar; consistency beats intensity." },
+          { title: "Set milestones", description: "Break into smaller checkpoints (e.g. by week or month)." },
+          { title: "Review and adjust", description: "Reflect regularly and tweak your approach." }
+        ],
+        fitness: [
+          { title: "Set a clear target for {{goal}}", description: "Define what success looks like (e.g. distance, frequency, duration)." },
+          { title: "Choose a plan or program", description: "Follow a proven plan or design one that fits your level." },
+          { title: "Build the habit", description: "Same time, same place; start small and increase gradually." },
+          { title: "Track progress", description: "Log workouts or key metrics so you can see improvement." },
+          { title: "Recover and adapt", description: "Rest days and listening to your body are part of the plan." }
+        ],
+        project: [
+          { title: "Clarify the outcome for {{goal}}", description: "What does done look like? Who is it for?" },
+          { title: "Break it into phases", description: "MVP first, then iterate; avoid big-bang launches." },
+          { title: "Schedule and commit", description: "Put deadlines and work blocks on the calendar." },
+          { title: "Ship and get feedback", description: "Launch something small, learn, then improve." },
+          { title: "Iterate", description: "Use feedback to refine scope and priorities." }
+        ],
+        habit: [
+          { title: "Define the habit for {{goal}}", description: "One clear behavior, stated in a single sentence." },
+          { title: "Pick a trigger", description: "Anchor it to an existing routine (e.g. after morning coffee)." },
+          { title: "Start tiny", description: "Make the first step so small you can't say no (e.g. 1 minute)." },
+          { title: "Track daily", description: "Use a simple tracker or checklist to build consistency." },
+          { title: "Review weekly", description: "Check what is working and adjust triggers or size." }
+        ],
+        general: [
+          { title: "Clarify what {{goal}} means to you", description: "Write down the outcome and why it matters." },
+          { title: "List the main steps", description: "Break the goal into 3 to 5 big chunks." },
+          { title: "Set a timeline", description: "Assign rough dates or deadlines to each chunk." },
+          { title: "Take the first step", description: "Do one concrete action in the next 24 hours." },
+          { title: "Review and adjust", description: "Revisit weekly and update the plan as needed." }
+        ]
+      };
+
+      var form = document.getElementById("planForm");
+      var goalInput = document.getElementById("goalInput");
+      var categorySelect = document.getElementById("categorySelect");
+      var timeframeInput = document.getElementById("timeframeInput");
+      var planSection = document.getElementById("planSection");
+      var planCategory = document.getElementById("planCategory");
+      var stepsList = document.getElementById("stepsList");
+      var copyBtn = document.getElementById("copyBtn");
+      var exportBtn = document.getElementById("exportBtn");
+
+      var currentPlan = null;
+      var completed = {};
+
+      function initCategorySelect() {
+        var auto = document.createElement("option");
+        auto.value = "";
+        auto.textContent = "Auto-detect from goal";
+        categorySelect.appendChild(auto);
+
+        CATEGORIES.forEach(function (category) {
+          var opt = document.createElement("option");
+          opt.value = category.id;
+          opt.textContent = category.label;
+          categorySelect.appendChild(opt);
+        });
+      }
+
+      function fillPlaceholders(text, goal, timeframe, categoryLabel) {
+        return text
+          .replace(/\{\{goal\}\}/gi, goal.trim() || "your goal")
+          .replace(/\{\{timeframe\}\}/gi, timeframe.trim() || "your timeline")
+          .replace(/\{\{category\}\}/gi, categoryLabel);
+      }
+
+      function inferCategory(goal) {
+        var lower = goal.toLowerCase().trim();
+        if (!lower) return CATEGORIES.filter(function (c) { return c.id === "general"; })[0];
+
+        var category = null;
+        CATEGORIES.forEach(function (c) {
+          if (category || c.id === "general") return;
+          var matched = c.keywords.some(function (kw) { return lower.indexOf(kw) !== -1; });
+          if (matched) category = c;
+        });
+        return category || CATEGORIES.filter(function (c) { return c.id === "general"; })[0];
+      }
+
+      function generatePlan(goal, categoryId, timeframe) {
+        var goalNorm = goal.trim() || "your goal";
+        var timeframeNorm = (timeframe || "").trim();
+        var chosen = categoryId
+          ? CATEGORIES.filter(function (c) { return c.id === categoryId; })[0]
+          : inferCategory(goalNorm);
+        var resolved = chosen || CATEGORIES.filter(function (c) { return c.id === "general"; })[0];
+        var templates = STEP_TEMPLATES[resolved.id] || STEP_TEMPLATES.general;
+
+        var steps = templates.map(function (template, index) {
+          return {
+            id: "step-" + resolved.id + "-" + index,
+            order: index + 1,
+            title: fillPlaceholders(template.title, goalNorm, timeframeNorm, resolved.label),
+            description: template.description
+              ? fillPlaceholders(template.description, goalNorm, timeframeNorm, resolved.label)
+              : ""
+          };
+        });
+
+        return {
+          categoryLabel: resolved.label,
+          steps: steps
+        };
+      }
+
+      function toggleStep(id) {
+        completed[id] = !completed[id];
+        renderSteps();
+      }
+
+      function renderSteps() {
+        if (!currentPlan) return;
+        stepsList.innerHTML = "";
+
+        currentPlan.steps.forEach(function (step) {
+          var li = document.createElement("li");
+          li.className = "step";
+
+          var checkBtn = document.createElement("button");
+          checkBtn.type = "button";
+          checkBtn.className = "check" + (completed[step.id] ? " completed" : "");
+          checkBtn.textContent = completed[step.id] ? "✓" : "○";
+          checkBtn.setAttribute("aria-label", completed[step.id] ? "Mark incomplete" : "Mark complete");
+          checkBtn.addEventListener("click", function () {
+            toggleStep(step.id);
+          });
+
+          var content = document.createElement("div");
+          var title = document.createElement("p");
+          title.className = "step-title" + (completed[step.id] ? " completed" : "");
+          title.textContent = step.order + ". " + step.title;
+          content.appendChild(title);
+
+          if (step.description) {
+            var desc = document.createElement("p");
+            desc.className = "step-desc";
+            desc.textContent = step.description;
+            content.appendChild(desc);
+          }
+
+          li.appendChild(checkBtn);
+          li.appendChild(content);
+          stepsList.appendChild(li);
+        });
+      }
+
+      function copyPlan() {
+        if (!currentPlan) return;
+        var text = currentPlan.steps
+          .map(function (step, index) {
+            return (index + 1) + ". " + step.title + (step.description ? "\n   " + step.description : "");
+          })
+          .join("\n\n");
+        var fullText = "Action plan: " + currentPlan.categoryLabel + "\n\n" + text;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(fullText);
+        }
+      }
+
+      function exportMarkdown() {
+        if (!currentPlan) return;
+        var md = "# Action plan: " + currentPlan.categoryLabel + "\n\n" + currentPlan.steps
+          .map(function (step, index) {
+            var body = "## " + (index + 1) + ". " + step.title + "\n";
+            if (step.description) body += step.description + "\n";
+            return body;
+          })
+          .join("\n");
+        var blob = new Blob([md], { type: "text/markdown" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "action-plan.md";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        var goal = goalInput.value.trim();
+        if (!goal) return;
+        currentPlan = generatePlan(goal, categorySelect.value, timeframeInput.value);
+        completed = {};
+        planCategory.textContent = "(" + currentPlan.categoryLabel + ")";
+        renderSteps();
+        planSection.hidden = false;
+      });
+
+      copyBtn.addEventListener("click", copyPlan);
+      exportBtn.addEventListener("click", exportMarkdown);
+      initCategorySelect();
+    })();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Goal → Action Plan</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
