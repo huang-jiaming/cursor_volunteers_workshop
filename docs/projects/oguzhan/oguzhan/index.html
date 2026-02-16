@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Networked Hiking Poll</title>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --panel: #ffffff;
+      --border: #d9d9d9;
+      --text: #1f1f1f;
+      --muted: #666666;
+      --test-pass: #0f5f1f;
+      --test-fail: #a30000;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      line-height: 1.4;
+    }
+    h1, h2, h3 { margin: 0 0 8px; font-weight: 600; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 18px; }
+    .app { max-width: 720px; margin: 0 auto; display: grid; gap: 12px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 12px;
+    }
+    label { display: block; font-size: 12px; margin-bottom: 4px; color: var(--muted); }
+    input, button {
+      width: 100%;
+      border: 1px solid var(--border);
+      padding: 8px;
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+    }
+    button { cursor: pointer; }
+    button.secondary { background: #f0f0f0; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .form-row.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    .option-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding: 6px; background: #fafafa; border: 1px solid var(--border); }
+    .option-row .votes { min-width: 2em; font-weight: 600; }
+    .option-row .vote-btn { width: auto; padding: 4px 10px; }
+    .small { font-size: 12px; color: var(--muted); }
+    .test-fail { color: var(--test-fail); }
+    .test-pass { color: var(--test-pass); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <p class="small"><a href="../index.html">Back to Gallery</a></p>
+    <h1>Networked Hiking Poll</h1>
+
+    <section class="panel">
+      <h2>Poll</h2>
+      <label>Poll title</label>
+      <input type="text" id="pollTitle" placeholder="e.g. Weekend hike">
+      <div id="optionsList"></div>
+      <div class="form-row four">
+        <div>
+          <label>Hike name</label>
+          <input type="text" id="newName" placeholder="e.g. Blue Trail">
+        </div>
+        <div>
+          <label>Date</label>
+          <input type="date" id="newDate">
+        </div>
+        <div>
+          <label>Latitude</label>
+          <input type="number" id="newLat" placeholder="52.52" step="any">
+        </div>
+        <div>
+          <label>Longitude</label>
+          <input type="number" id="newLon" placeholder="13.40" step="any">
+        </div>
+      </div>
+      <button id="addOptionBtn">Add option</button>
+    </section>
+
+    <section class="panel" id="winnerSection">
+      <h2>Most selected hike</h2>
+      <div id="winnerContent"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Unit tests</h2>
+      <button id="runTestsBtn">Run Tests</button>
+      <div id="testResults" class="small"></div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var STORAGE_KEY = "oguzhan_hiking_poll_v1";
+      var nextId = 1;
+
+      // --- Mock weather (static per location name) ---
+      var MOCK_WEATHER = {
+        "Blue Trail": { condition: "Sunny", temp: "18°C", wind: "Light" },
+        "Red Trail": { condition: "Partly cloudy", temp: "16°C", wind: "Moderate" },
+        "Summit Loop": { condition: "Clear", temp: "12°C", wind: "Strong" },
+        "Lake Path": { condition: "Cloudy", temp: "14°C", wind: "Light" },
+        "Forest Loop": { condition: "Sunny", temp: "20°C", wind: "Calm" }
+      };
+      var DEFAULT_WEATHER = { condition: "—", temp: "—", wind: "—" };
+
+      // --- State ---
+      var state = {
+        title: "",
+        options: []
+      };
+
+      function loadState() {
+        try {
+          var raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            var parsed = JSON.parse(raw);
+            state.title = parsed.title || "";
+            state.options = (parsed.options || []).map(function (o) {
+              return {
+                id: o.id || nextId++,
+                name: o.name || "",
+                date: o.date || "",
+                lat: Number(o.lat) || 0,
+                lon: Number(o.lon) || 0,
+                votes: Number(o.votes) || 0
+              };
+            });
+            state.options.forEach(function (o) {
+              if (o.id >= nextId) nextId = o.id + 1;
+            });
+          }
+        } catch (e) {}
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            title: state.title,
+            options: state.options.map(function (o) {
+              return { id: o.id, name: o.name, date: o.date, lat: o.lat, lon: o.lon, votes: o.votes };
+            })
+          }));
+        } catch (e) {}
+      }
+
+      // --- Helpers ---
+      function addOption(name, date, lat, lon) {
+        var id = nextId++;
+        state.options.push({
+          id: id,
+          name: String(name).trim(),
+          date: String(date),
+          lat: Number(lat) || 0,
+          lon: Number(lon) || 0,
+          votes: 0
+        });
+        saveState();
+        return id;
+      }
+
+      function vote(optionId) {
+        var opt = state.options.filter(function (o) { return o.id === optionId; })[0];
+        if (opt) {
+          opt.votes++;
+          saveState();
+        }
+      }
+
+      function getWinningOption() {
+        if (state.options.length === 0) return null;
+        var max = state.options[0];
+        for (var i = 1; i < state.options.length; i++) {
+          if (state.options[i].votes > max.votes) max = state.options[i];
+        }
+        return max.votes > 0 ? max : null;
+      }
+
+      function getMockWeather(locationIdOrName) {
+        var key = String(locationIdOrName || "").trim();
+        if (MOCK_WEATHER[key]) return MOCK_WEATHER[key];
+        return DEFAULT_WEATHER;
+      }
+
+      // Sunrise/sunset: USNO algorithm, inputs date YYYY-MM-DD and lat/lon in degrees.
+      // Returns { sunrise: "HH:MM", sunset: "HH:MM" } in local mean time (approx).
+      function computeSunriseSunset(dateStr, lat, lon) {
+        var parts = String(dateStr).split("-");
+        if (parts.length !== 3) return { sunrise: "—", sunset: "—" };
+        var year = parseInt(parts[0], 10);
+        var month = parseInt(parts[1], 10);
+        var day = parseInt(parts[2], 10);
+        if (isNaN(year) || isNaN(month) || isNaN(day)) return { sunrise: "—", sunset: "—" };
+        lat = Number(lat);
+        lon = Number(lon);
+
+        var D2R = Math.PI / 180;
+        var R2D = 180 / Math.PI;
+        var zenith = 90 + 50 / 60;
+
+        function dayOfYear(y, m, d) {
+          var n1 = Math.floor(275 * m / 9);
+          var n2 = Math.floor((m + 9) / 12);
+          var n3 = (1 + Math.floor((y - 4 * Math.floor(y / 4) + 2) / 3));
+          return n1 - n2 * n3 + d - 30;
+        }
+
+        function calc(sunrise) {
+          var N = dayOfYear(year, month, day);
+          var lnHour = lon / 15;
+          var t = sunrise ? N + (6 - lnHour) / 24 : N + (18 - lnHour) / 24;
+          var M = (0.9856 * t) - 3.289;
+          var L = M + (1.916 * Math.sin(M * D2R)) + (0.020 * Math.sin(2 * M * D2R)) + 282.634;
+          L = L % 360;
+          if (L < 0) L += 360;
+          var RA = R2D * Math.atan(0.91764 * Math.tan(L * D2R));
+          RA = RA % 360;
+          if (RA < 0) RA += 360;
+          var Lquadrant = Math.floor(L / 90) * 90;
+          var RAquadrant = Math.floor(RA / 90) * 90;
+          RA = RA + (Lquadrant - RAquadrant);
+          RA = RA / 15;
+          var sinDec = 0.39782 * Math.sin(L * D2R);
+          var cosDec = Math.cos(Math.asin(sinDec));
+          var cosH = (Math.cos(zenith * D2R) - sinDec * Math.sin(lat * D2R)) / (cosDec * Math.cos(lat * D2R));
+          if (cosH > 1 || cosH < -1) return null;
+          var H = sunrise ? (360 - R2D * Math.acos(cosH)) : (R2D * Math.acos(cosH));
+          H = H / 15;
+          var T = H + RA - (0.06571 * t) - 6.622;
+          var UT = T - lnHour;
+          while (UT < 0) UT += 24;
+          while (UT >= 24) UT -= 24;
+          var localT = UT + lon / 15;
+          while (localT < 0) localT += 24;
+          while (localT >= 24) localT -= 24;
+          var hours = Math.floor(localT);
+          var mins = Math.round((localT - hours) * 60);
+          if (mins >= 60) { mins = 0; hours++; }
+          if (hours >= 24) hours -= 24;
+          return (hours < 10 ? "0" : "") + hours + ":" + (mins < 10 ? "0" : "") + mins;
+        }
+
+        var sunrise = calc(true);
+        var sunset = calc(false);
+        return {
+          sunrise: sunrise != null ? sunrise : "—",
+          sunset: sunset != null ? sunset : "—"
+        };
+      }
+
+      function escapeHtml(s) {
+        var div = document.createElement("div");
+        div.textContent = s;
+        return div.innerHTML;
+      }
+
+      // --- DOM ---
+      var pollTitleEl = document.getElementById("pollTitle");
+      var optionsListEl = document.getElementById("optionsList");
+      var newNameEl = document.getElementById("newName");
+      var newDateEl = document.getElementById("newDate");
+      var newLatEl = document.getElementById("newLat");
+      var newLonEl = document.getElementById("newLon");
+      var winnerContentEl = document.getElementById("winnerContent");
+      var testResultsEl = document.getElementById("testResults");
+      var runTestsBtn = document.getElementById("runTestsBtn");
+
+      function render() {
+        pollTitleEl.value = state.title;
+        state.title = pollTitleEl.value;
+
+        optionsListEl.innerHTML = "";
+        state.options.forEach(function (opt) {
+          var row = document.createElement("div");
+          row.className = "option-row";
+          row.innerHTML =
+            "<span class=\"votes\">" + opt.votes + "</span>" +
+            "<span>" + escapeHtml(opt.name) + " — " + escapeHtml(opt.date) + " (" + opt.lat + ", " + opt.lon + ")</span>" +
+            "<button class=\"vote-btn\" data-id=\"" + opt.id + "\">Vote</button>";
+          optionsListEl.appendChild(row);
+        });
+
+        var winner = getWinningOption();
+        if (winner) {
+          var w = getMockWeather(winner.name);
+          var sun = computeSunriseSunset(winner.date, winner.lat, winner.lon);
+          winnerContentEl.innerHTML =
+            "<p><strong>" + escapeHtml(winner.name) + "</strong> (" + escapeHtml(winner.date) + ")</p>" +
+            "<p><strong>Weather:</strong> " + escapeHtml(w.condition) + ", " + escapeHtml(w.temp) + ", " + escapeHtml(w.wind) + "</p>" +
+            "<p><strong>Sunrise:</strong> " + sun.sunrise + " &nbsp; <strong>Sunset:</strong> " + sun.sunset + "</p>";
+        } else {
+          winnerContentEl.innerHTML = "<p class=\"small\">Add options and vote to see the most selected hike and its weather and sunrise/sunset.</p>";
+        }
+      }
+
+      function syncTitle() {
+        state.title = pollTitleEl.value;
+        saveState();
+      }
+
+      pollTitleEl.addEventListener("input", syncTitle);
+      pollTitleEl.addEventListener("change", syncTitle);
+
+      document.getElementById("addOptionBtn").addEventListener("click", function () {
+        var name = newNameEl.value.trim();
+        var date = newDateEl.value;
+        var lat = newLatEl.value;
+        var lon = newLonEl.value;
+        if (!name) return;
+        addOption(name, date, lat, lon);
+        newNameEl.value = "";
+        newDateEl.value = "";
+        newLatEl.value = "";
+        newLonEl.value = "";
+        render();
+      });
+
+      optionsListEl.addEventListener("click", function (e) {
+        var btn = e.target;
+        if (btn.classList.contains("vote-btn") && btn.dataset.id) {
+          vote(parseInt(btn.dataset.id, 10));
+          render();
+        }
+      });
+
+      // --- Unit tests ---
+      function runUnitTests() {
+        var tests = [];
+        function add(name, fn) {
+          tests.push({ name: name, fn: fn });
+        }
+        function expect(condition, message) {
+          if (!condition) throw new Error(message);
+        }
+
+        add("getWinningOption returns null when no options", function () {
+          var prev = state.options;
+          state.options = [];
+          var win = getWinningOption();
+          state.options = prev;
+          expect(win === null, "Expected null");
+        });
+
+        add("getWinningOption returns option with most votes", function () {
+          var prev = state.options;
+          state.options = [
+            { id: 1, name: "A", date: "2026-06-15", lat: 52, lon: 13, votes: 2 },
+            { id: 2, name: "B", date: "2026-06-16", lat: 48, lon: 2, votes: 3 }
+          ];
+          var win = getWinningOption();
+          state.options = prev;
+          expect(win && win.name === "B" && win.votes === 3, "Expected B with 3 votes");
+        });
+
+        add("getWinningOption returns null when all votes zero", function () {
+          var prev = state.options;
+          state.options = [
+            { id: 1, name: "A", date: "2026-06-15", lat: 52, lon: 13, votes: 0 },
+            { id: 2, name: "B", date: "2026-06-16", lat: 48, lon: 2, votes: 0 }
+          ];
+          var win = getWinningOption();
+          state.options = prev;
+          expect(win === null, "Expected null when all zero");
+        });
+
+        add("getMockWeather returns data for known location", function () {
+          var w = getMockWeather("Blue Trail");
+          expect(w.condition === "Sunny" && w.temp === "18°C", "Expected Blue Trail weather");
+        });
+
+        add("getMockWeather returns default for unknown location", function () {
+          var w = getMockWeather("Unknown Peak");
+          expect(w.condition === "—" && w.temp === "—", "Expected default weather");
+        });
+
+        add("computeSunriseSunset returns valid HH:MM format", function () {
+          var out = computeSunriseSunset("2026-06-21", 52.52, 13.40);
+          expect(/^\d{1,2}:\d{2}$/.test(out.sunrise), "Sunrise should be HH:MM");
+          expect(/^\d{1,2}:\d{2}$/.test(out.sunset), "Sunset should be HH:MM");
+        });
+
+        add("computeSunriseSunset sunrise before sunset in summer mid-lat", function () {
+          var out = computeSunriseSunset("2026-06-21", 52.52, 13.40);
+          var sr = out.sunrise.split(":").map(Number);
+          var ss = out.sunset.split(":").map(Number);
+          var sunriseMin = sr[0] * 60 + sr[1];
+          var sunsetMin = ss[0] * 60 + ss[1];
+          expect(sunriseMin < sunsetMin, "Sunrise should be before sunset");
+        });
+
+        add("computeSunriseSunset invalid date returns dashes", function () {
+          var out = computeSunriseSunset("invalid", 52, 13);
+          expect(out.sunrise === "—" && out.sunset === "—", "Invalid date should return —");
+        });
+
+        var started = Date.now();
+        var failures = [];
+        tests.forEach(function (test) {
+          try {
+            test.fn();
+          } catch (err) {
+            failures.push({ name: test.name, error: err.message });
+          }
+        });
+        var elapsed = Date.now() - started;
+        var passed = tests.length - failures.length;
+
+        testResultsEl.innerHTML = [
+          "<div>Executed " + tests.length + " tests in " + elapsed + "ms.</div>",
+          "<div class='" + (failures.length ? "test-fail" : "test-pass") + "'>" + passed + " passed, " + failures.length + " failed.</div>",
+          failures.map(function (f) {
+            return "<div class='test-fail'>FAIL: " + escapeHtml(f.name) + " — " + escapeHtml(f.error) + "</div>";
+          }).join("")
+        ].join("");
+
+        return {
+          total: tests.length,
+          passed: passed,
+          failed: failures.length,
+          failures: failures,
+          elapsedMs: elapsed
+        };
+      }
+
+      runTestsBtn.addEventListener("click", function () {
+        runUnitTests();
+      });
+
+      window.hikingAppTestApi = {
+        addOption: addOption,
+        vote: vote,
+        getWinningOption: getWinningOption,
+        getMockWeather: getMockWeather,
+        computeSunriseSunset: computeSunriseSunset,
+        runUnitTests: runUnitTests,
+        getState: function () { return state; },
+        setState: function (s) { state = s; }
+      };
+
+      loadState();
+      render();
+      runUnitTests();
+    })();
+  </script>
+</body>
+</html>

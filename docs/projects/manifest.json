@@ -1,5 +1,15 @@
 [
   {
+    "name": "adarsh",
+    "title": "Goal to Action Plan",
+    "path": "projects/adarsh/"
+  },
+  {
+    "name": "demo",
+    "title": "Smart To-Do List Demo",
+    "path": "projects/demo/"
+  },
+  {
     "name": "example",
     "title": "Example: Daily Standup Notes with Cursor",
     "path": "projects/example/"
@@ -10,9 +20,9 @@
     "path": "projects/jia/"
   },
   {
-    "name": "demo",
-    "title": "Smart To-Do List Demo",
-    "path": "projects/demo/"
+    "name": "jj",
+    "title": "News Aggregator Prototype",
+    "path": "projects/jj/"
   },
   {
     "name": "nick",
@@ -20,8 +30,13 @@
     "path": "projects/nick/"
   },
   {
-    "name": "jj",
-    "title": "News Aggregator Prototype",
-    "path": "projects/jj/"
+    "name": "oguzhan",
+    "title": "Networked Hiking Poll",
+    "path": "projects/oguzhan/"
+  },
+  {
+    "name": "yumi",
+    "title": "Collage Maker",
+    "path": "projects/yumi/"
   }
 ]
