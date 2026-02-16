@@ -13,5 +13,15 @@
     "name": "demo",
     "title": "Smart To-Do List Demo",
     "path": "projects/demo/"
+  },
+  {
+    "name": "nick",
+    "title": "Pomodoro Timer Productivity App",
+    "path": "projects/nick/"
+  },
+  {
+    "name": "jj",
+    "title": "News Aggregator Prototype",
+    "path": "projects/jj/"
   }
 ]
